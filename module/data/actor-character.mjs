@@ -1,4 +1,5 @@
 import JaySpikActorBase from "./base-actor.mjs";
+import { generateAbilitiesSchema } from "../config/stats-config.mjs";
 
 export default class JaySpikCharacter extends JaySpikActorBase {
   static defineSchema() {
@@ -12,33 +13,8 @@ export default class JaySpikCharacter extends JaySpikActorBase {
       }),
     });
 
-    // Iterate over ability names and create a new SchemaField for each.
-    schema.abilities = new fields.SchemaField({
-      mental: new fields.SchemaField({
-        value: new fields.NumberField({
-          ...requiredInteger,
-          initial: 50,
-          min: 0,
-          max: 100,
-        }),
-      }),
-      physique: new fields.SchemaField({
-        value: new fields.NumberField({
-          ...requiredInteger,
-          initial: 50,
-          min: 0,
-          max: 100,
-        }),
-      }),
-      social: new fields.SchemaField({
-        value: new fields.NumberField({
-          ...requiredInteger,
-          initial: 50,
-          min: 0,
-          max: 100,
-        }),
-      }),
-    });
+    // Génération automatique des statistiques à partir de la configuration centralisée
+    schema.abilities = new fields.SchemaField(generateAbilitiesSchema(fields));
 
     return schema;
   }
@@ -48,9 +24,8 @@ export default class JaySpikCharacter extends JaySpikActorBase {
     for (const key in this.abilities) {
       // Pas de modificateur dans notre système, la valeur est directement utilisée
       this.abilities[key].mod = this.abilities[key].value;
-      // Handle ability label localization.
-      this.abilities[key].label =
-        game.i18n.localize(CONFIG.JAY_SPIK.abilities[key]) ?? key;
+      // Utilisation du label direct depuis la configuration (plus besoin de localisation)
+      this.abilities[key].label = CONFIG.JAY_SPIK.abilities[key] ?? key;
     }
   }
 
@@ -68,5 +43,45 @@ export default class JaySpikCharacter extends JaySpikActorBase {
     data.lvl = this.attributes.level.value;
 
     return data;
+  }
+
+  /**
+   * Calcule la valeur modifiée d'une statistique en appliquant tous les bonus des items
+   * @param {string} stat - Le nom de la statistique (mental, physique, social, etc.)
+   * @param {number} baseValue - La valeur de base de la statistique
+   * @returns {number} La valeur modifiée après application des bonus
+   */
+  getStatBonus(stat, baseValue) {
+    let modifiedValue = baseValue;
+
+    // Parcourir tous les items de l'acteur
+    for (const item of this.parent.items) {
+      if (item.system.bonusList && Array.isArray(item.system.bonusList)) {
+        // Parcourir tous les bonus de cet item
+        for (const bonus of item.system.bonusList) {
+          if (bonus.stat === stat && bonus.value != null && bonus.value !== 0) {
+            switch (bonus.operator) {
+              case "+":
+                modifiedValue += Number(bonus.value);
+                break;
+              case "-":
+                modifiedValue -= Number(bonus.value);
+                break;
+              case "*":
+                modifiedValue *= Number(bonus.value);
+                break;
+              case "/":
+                if (Number(bonus.value) !== 0) {
+                  modifiedValue /= Number(bonus.value);
+                }
+                break;
+            }
+          }
+        }
+      }
+    }
+
+    // S'assurer que la valeur reste dans les limites (0-100 pour ce système)
+    return Math.max(0, Math.min(100, Math.round(modifiedValue)));
   }
 }

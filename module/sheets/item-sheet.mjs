@@ -1,7 +1,7 @@
 import {
   onManageActiveEffect,
   prepareActiveEffectCategories,
-} from '../helpers/effects.mjs';
+} from "../helpers/effects.mjs";
 
 /**
  * Extend the basic ItemSheet with some very simple modifications
@@ -11,14 +11,14 @@ export class JaySpikItemSheet extends ItemSheet {
   /** @override */
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
-      classes: ['jay-spik', 'sheet', 'item'],
+      classes: ["jay-spik", "sheet", "item"],
       width: 520,
       height: 480,
       tabs: [
         {
-          navSelector: '.sheet-tabs',
-          contentSelector: '.sheet-body',
-          initial: 'description',
+          navSelector: ".sheet-tabs",
+          contentSelector: ".sheet-body",
+          initial: "description",
         },
       ],
     });
@@ -26,7 +26,7 @@ export class JaySpikItemSheet extends ItemSheet {
 
   /** @override */
   get template() {
-    const path = 'systems/jay-spik/templates/item';
+    const path = "systems/jay-spik/templates/item";
     // Return a single sheet for all item types.
     // return `${path}/item-sheet.hbs`;
 
@@ -85,9 +85,45 @@ export class JaySpikItemSheet extends ItemSheet {
 
     // Roll handlers, click handlers, etc. would go here.
 
+    // Gestion des bonus aux statistiques
+    html.on("click", ".add-bonus", this._onAddBonus.bind(this));
+    html.on("click", ".remove-bonus", this._onRemoveBonus.bind(this));
+
     // Active Effect management
-    html.on('click', '.effect-control', (ev) =>
+    html.on("click", ".effect-control", (ev) =>
       onManageActiveEffect(ev, this.item)
     );
+  }
+
+  /* -------------------------------------------- */
+
+  /**
+   * Ajouter un nouveau bonus à la liste
+   * @param {Event} event
+   * @private
+   */
+  async _onAddBonus(event) {
+    event.preventDefault();
+    const bonusList = this.item.system.bonusList || [];
+    const newBonus = {
+      stat: "",
+      operator: "+",
+      value: 0,
+    };
+    bonusList.push(newBonus);
+    await this.item.update({ "system.bonusList": bonusList });
+  }
+
+  /**
+   * Supprimer un bonus de la liste
+   * @param {Event} event
+   * @private
+   */
+  async _onRemoveBonus(event) {
+    event.preventDefault();
+    const index = parseInt(event.currentTarget.dataset.index);
+    const bonusList = this.item.system.bonusList || [];
+    bonusList.splice(index, 1);
+    await this.item.update({ "system.bonusList": bonusList });
   }
 }

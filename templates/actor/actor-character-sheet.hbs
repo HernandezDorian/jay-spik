@@ -66,9 +66,9 @@
           <div class="abilities flexcol">
             {{#each system.abilities as |ability key|}}
             <div class="ability flexrow flex-group-center">
-              <label for="system.abilities.{{key}}.value" class="resource-label rollable flexlarge align-left" data-roll="1d100" data-ability="{{key}}" data-label="{{localize (lookup @root.config.abilities key)}}">{{localize (lookup @root.config.abilities key)}}</label>
+              <label for="system.abilities.{{key}}.value" class="resource-label rollable flexlarge align-left" data-roll="1d100" data-ability="{{key}}" data-label="{{lookup @root.config.abilities key}}">{{lookup @root.config.abilities key}}</label>
               <input type="text" name="system.abilities.{{key}}.value" value="{{ability.value}}" data-dtype="Number" min="0" max="100"/>
-              <span class="ability-mod rollable" data-roll="1d100" data-ability="{{key}}" data-label="{{localize (lookup @root.config.abilities key)}}">{{ability.value}}</span>
+              <span class="ability-mod rollable{{#if ability.hasBonus}} has-bonus{{/if}}" data-roll="1d100" data-ability="{{key}}" data-label="{{lookup @root.config.abilities key}}" title="{{#if ability.hasBonus}}Base: {{ability.value}} | Modifié: {{ability.modifiedValue}}{{else}}{{ability.value}}{{/if}}">{{ability.modifiedValue}}</span>
             </div>
             {{/each}}
           </div>

@@ -427,6 +427,19 @@
   color: #d4362a;
 }
 
+/* Style pour les statistiques avec bonus */
+.jay-spik .ability .ability-mod.has-bonus {
+  background: rgba(54, 162, 235, 0.2);
+  border: 1px solid #36a2eb;
+  color: #1565c0;
+  font-weight: bold;
+}
+
+.jay-spik .ability .ability-mod.has-bonus:hover {
+  background: rgba(54, 162, 235, 0.3);
+  color: #0d47a1;
+}
+
 /* Style pour les valeurs élevées (80+) */
 .jay-spik .ability input[value*="8"][value*="0"],
 .jay-spik .ability input[value*="9"][value*="0"],

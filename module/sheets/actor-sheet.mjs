@@ -94,6 +94,18 @@ export class JaySpikActorSheet extends ActorSheet {
   _prepareCharacterData(context) {
     // This is where you can enrich character-specific editor fields
     // or setup anything else that's specific to this type
+
+    // Enrichir les données des statistiques avec les valeurs modifiées par les bonus des items
+    if (context.system.abilities) {
+      for (const [key, ability] of Object.entries(context.system.abilities)) {
+        const modifiedValue = this.actor.system.getStatBonus(
+          key,
+          ability.value
+        );
+        ability.modifiedValue = modifiedValue;
+        ability.hasBonus = modifiedValue !== ability.value;
+      }
+    }
   }
 
   /**
@@ -270,20 +282,33 @@ export class JaySpikActorSheet extends ActorSheet {
         );
 
         if (abilityKey && this.actor.system.abilities[abilityKey]) {
-          const abilityValue = this.actor.system.abilities[abilityKey].value;
-          console.log("Ability value:", abilityValue);
+          const baseAbilityValue =
+            this.actor.system.abilities[abilityKey].value;
+          const modifiedAbilityValue = this.actor.system.getStatBonus(
+            abilityKey,
+            baseAbilityValue
+          );
+          console.log("Base ability value:", baseAbilityValue);
+          console.log("Modified ability value:", modifiedAbilityValue);
 
           const result = roll.total;
           console.log("Roll result:", result);
-          const success = result <= abilityValue;
+          const success = result <= modifiedAbilityValue;
 
           const successText = success
             ? `<span style="color: green; font-weight: bold;">SUCCÈS</span>`
             : `<span style="color: red; font-weight: bold;">ÉCHEC</span>`;
 
-          const flavorText = `
+          let flavorText = `
             <div style="text-align: center;">
-              <strong>${label}</strong> (Seuil: ${abilityValue})<br/>
+              <strong>${label}</strong> (Seuil: ${modifiedAbilityValue}`;
+
+          // Afficher les détails du calcul si des bonus/malus sont appliqués
+          if (baseAbilityValue !== modifiedAbilityValue) {
+            flavorText += ` = ${baseAbilityValue} base + bonus`;
+          }
+
+          flavorText += `)<br/>
               Résultat: ${result} ${successText}
             </div>
           `;
