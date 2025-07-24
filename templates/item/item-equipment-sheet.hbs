@@ -199,6 +199,20 @@
         </select>
       </div>
       
+      <!-- Formule de dégâts personnalisée -->
+      <div class="resource">
+        <label class="resource-label">Formule de Dégâts</label>
+        <input
+          type="text"
+          name="system.damageFormula"
+          value="{{system.damageFormula}}"
+          data-dtype="String"
+          placeholder="ex: 1d4+2, 2d6+@degats"
+          title="Formule de dégâts (ex: 1d4+2, 2d6+@degats, 1d8+@physique)"
+        />
+        <small>Utilisez @statname pour référencer les stats du personnage</small>
+      </div>
+      
       <!-- Dégâts totaux calculés -->
       <div class="resource">
         <label class="resource-label">Dégâts Totaux</label>

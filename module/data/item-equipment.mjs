@@ -62,6 +62,12 @@ export default class JaySpikEquipment extends JaySpikItemBase {
       attackStat: new fields.StringField({ initial: "physique" }),
     });
 
+    // Formule de dégâts personnalisée (ex: "1d4+2", "2d6+@degats")
+    schema.damageFormula = new fields.StringField({
+      initial: "",
+      blank: true,
+    });
+
     // Liste des bonus/malus aux statistiques primaires (hérité du système existant)
     schema.bonusList = new fields.ArrayField(new fields.ObjectField());
 

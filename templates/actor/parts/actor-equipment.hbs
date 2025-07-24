@@ -2,6 +2,19 @@
 <div class="equipment-section">
   <h3>Équipement</h3>
   
+  {{!-- Boutons de création d'équipement --}}
+  <div class="equipment-controls">
+    <a class="item-create" data-type="equipment" data-equipment-type="weapon" title="Créer une Arme">
+      <i class="fas fa-sword"></i> Nouvelle Arme
+    </a>
+    <a class="item-create" data-type="equipment" data-equipment-type="armor" title="Créer une Armure">
+      <i class="fas fa-shield-alt"></i> Nouvelle Armure
+    </a>
+    <a class="item-create" data-type="equipment" data-equipment-type="accessory" title="Créer un Accessoire">
+      <i class="fas fa-ring"></i> Nouvel Accessoire
+    </a>
+  </div>
+  
   {{!-- Totaux de l'équipement --}}
   <div class="equipment-totals grid grid-4col">
     <div class="resource flex-group-center">
@@ -44,6 +57,7 @@
           <div class="item-health">Vie</div>
           <div class="item-mana">Mana</div>
           <div class="item-damage">Dégâts</div>
+          <div class="item-roll">Action</div>
           <div class="item-durability">Durabilité</div>
           <div class="item-controls"></div>
         </li>
@@ -72,6 +86,14 @@
           
           <div class="item-damage">
             {{#if item.system.equipped}}+{{item.system.effects.damage}}{{else}}(+{{item.system.effects.damage}}){{/if}}
+          </div>
+          
+          <div class="item-roll">
+            {{#if item.system.damageFormula}}
+              <a class="item-roll-damage rollable" data-item-id="{{item._id}}" title="Lancer les dégâts">
+                <i class="fas fa-dice-d20"></i> {{item.system.damageFormula}}
+              </a>
+            {{/if}}
           </div>
           
           <div class="item-durability">

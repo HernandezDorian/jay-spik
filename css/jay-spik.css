@@ -477,3 +477,85 @@
   border-bottom: 1px solid #c9c7b8;
   padding-bottom: 5px;
 }
+
+/* Equipment controls */
+.equipment-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 5px;
+}
+
+.equipment-controls .item-create {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  background: #4b9cd3;
+  color: white;
+  text-decoration: none;
+  border-radius: 3px;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.equipment-controls .item-create:hover {
+  background: #357abd;
+  color: white;
+}
+
+/* Equipment list styling */
+.equipment-list .items-header {
+  font-weight: bold;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.equipment-list .item-roll {
+  text-align: center;
+  min-width: 80px;
+}
+
+.item-roll-damage {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 8px;
+  background: #d35400;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.item-roll-damage:hover {
+  background: #e67e22;
+}
+
+/* Equipment totals styling */
+.equipment-totals {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: rgba(46, 125, 50, 0.1);
+  border-radius: 5px;
+  border: 1px solid rgba(46, 125, 50, 0.2);
+}
+
+.equipment-totals .resource-content span {
+  font-weight: bold;
+  color: #2e7d32;
+}
+
+/* Bonus indicators */
+.has-bonus {
+  color: #2e7d32 !important;
+  font-weight: bold;
+}
+
+.has-bonus::after {
+  content: " ✓";
+  color: #4caf50;
+}

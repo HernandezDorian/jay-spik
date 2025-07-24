@@ -69,6 +69,18 @@
           <option value='disadvantage' {{#if (eq system.advantage 'disadvantage')}}selected{{/if}}>Désavantage</option>
         </select>
       </div>
+      <div class='resource'>
+        <label class='resource-label'>Formule de Dégâts</label>
+        <input
+          type='text'
+          name='system.damageFormula'
+          value='{{system.damageFormula}}'
+          data-dtype='String'
+          placeholder='ex: 1d6+2, 2d8+@mental'
+          title='Formule de dégâts (ex: 1d6+2, 2d8+@mental, 1d10+@degats)'
+        />
+        <small>Utilisez @statname pour référencer les stats du personnage</small>
+      </div>
     </div>
   </section>
 </form>

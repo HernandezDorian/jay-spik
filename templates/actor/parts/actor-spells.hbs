@@ -41,6 +41,17 @@
             <i class="fas fa-dice"></i>
             Lancer
           </button>
+          {{#if item.system.damageFormula}}
+            <button
+              type="button"
+              class="item-roll-damage rollable"
+              data-item-id="{{item._id}}"
+              title="Lancer les dégâts"
+            >
+              <i class="fas fa-dice-d20"></i>
+              {{item.system.damageFormula}}
+            </button>
+          {{/if}}
           <a
             class="item-control item-edit"
             title="{{localize 'DOCUMENT.Edit' type="spell"}}"

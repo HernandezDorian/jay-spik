@@ -323,6 +323,9 @@ export class JaySpikActorSheet extends ActorSheet {
     // Equipment toggle (équiper/déséquiper)
     html.on("change", ".equipment-toggle", this._onEquipmentToggle.bind(this));
 
+    // Item damage rolls
+    html.on("click", ".item-roll-damage", this._onItemDamageRoll.bind(this));
+
     // Active Effect management
     html.on("click", ".effect-control", (ev) => {
       const row = ev.currentTarget.closest("li");
@@ -360,15 +363,40 @@ export class JaySpikActorSheet extends ActorSheet {
     // Grab any data associated with this control.
     const data = duplicate(header.dataset);
     // Initialize a default name.
-    const name = `New ${type.capitalize()}`;
+    let name = `New ${type.capitalize()}`;
+
     // Prepare the item object.
     const itemData = {
       name: name,
       type: type,
       system: data,
     };
-    // Remove the type from the dataset since it's in the itemData.type prop.
+
+    // Special handling for equipment types
+    if (type === "equipment") {
+      const equipmentType = header.dataset.equipmentType || "weapon";
+      itemData.system.equipmentType = equipmentType;
+
+      // Set default names based on equipment type
+      switch (equipmentType) {
+        case "weapon":
+          name = "Nouvelle Arme";
+          itemData.system.damageFormula = "1d4+2";
+          break;
+        case "armor":
+          name = "Nouvelle Armure";
+          itemData.system.effects = { armor: 1 };
+          break;
+        case "accessory":
+          name = "Nouvel Accessoire";
+          break;
+      }
+      itemData.name = name;
+    }
+
+    // Remove the type and equipmentType from the dataset since they're set separately
     delete itemData.system["type"];
+    delete itemData.system["equipmentType"];
 
     // Finally, create the item!
     return await Item.create(itemData, { parent: this.actor });
@@ -493,5 +521,45 @@ export class JaySpikActorSheet extends ActorSheet {
       await item.update({ "system.equipped": checkbox.checked });
       this.render(false); // Re-render to update bonuses display
     }
+  }
+
+  /**
+   * Handle rolling damage for an item (weapon or spell)
+   * @param {Event} event
+   * @private
+   */
+  async _onItemDamageRoll(event) {
+    event.preventDefault();
+    const itemId = event.currentTarget.dataset.itemId;
+    const item = this.actor.items.get(itemId);
+
+    if (!item || !item.system.damageFormula) {
+      ui.notifications.warn("Aucune formule de dégâts définie pour cet objet.");
+      return;
+    }
+
+    // Préparer la formule avec les données de l'acteur
+    let formula = item.system.damageFormula;
+    const rollData = this.actor.getRollData();
+
+    // Remplacer les références aux stats (@statname) par les valeurs modifiées
+    for (const [key, ability] of Object.entries(this.actor.system.abilities)) {
+      const modifiedValue = this.actor.system.getStatBonus(
+        key,
+        ability.value || 0
+      );
+      formula = formula.replace(new RegExp(`@${key}`, "g"), modifiedValue);
+    }
+
+    // Créer et exécuter le roll
+    const roll = new Roll(formula, rollData);
+    await roll.evaluate();
+
+    // Afficher le résultat dans le chat
+    roll.toMessage({
+      speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+      flavor: `<strong>${item.name}</strong> - Dégâts`,
+      rollMode: game.settings.get("core", "rollMode"),
+    });
   }
 }

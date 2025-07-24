@@ -17,6 +17,12 @@ export default class JaySpikSpell extends JaySpikItemBase {
     schema.formula = new fields.StringField({ initial: "1d100" }); // Formule de base
     schema.advantage = new fields.StringField({ initial: "" }); // "", "advantage" ou "disadvantage"
 
+    // Formule de dégâts personnalisée (ex: "1d6+2", "2d8+@mental")
+    schema.damageFormula = new fields.StringField({
+      initial: "",
+      blank: true,
+    });
+
     return schema;
   }
 }
