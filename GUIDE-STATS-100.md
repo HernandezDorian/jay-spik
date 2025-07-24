@@ -4,11 +4,12 @@
 
 Votre système JaySpik utilise maintenant un système de caractéristiques basé sur 100, avec trois stats principales :
 
-### Les 3 Caractéristiques
+### Les 4 Caractéristiques
 
 1. **Mental** - Représente l'intelligence, la volonté, la magie, etc.
 2. **Physique** - Représente la force, l'endurance, l'agilité, etc.
 3. **Social** - Représente le charisme, la persuasion, l'empathie, etc.
+4. **Dégâts** - Représente la puissance d'attaque, force destructrice, etc.
 
 ### Valeurs recommandées
 
@@ -64,12 +65,52 @@ Votre système permet maintenant aux objets d'appliquer des bonus et malus dynam
 - Malédiction : /2 en Mental
 - Armure lourde : -5 en Physique
 
-### Conseils de création
+## Système d'Équipement
 
-- **Personnage équilibré** : 50/50/50 (150 points au total)
-- **Spécialiste Mental** : 80/40/30 (exemple : mage, érudit)
-- **Spécialiste Physique** : 30/80/40 (exemple : guerrier, athlète)
-- **Spécialiste Social** : 40/30/80 (exemple : diplomate, barde)
+Votre système dispose maintenant d'un onglet **Équipement** dédié dans les fiches de personnage :
+
+### Types d'équipement disponibles
+
+1. **Armes** : Définissent des dégâts de base et peuvent être équipées
+2. **Armures & Boucliers** : Fournissent des bonus d'armure
+3. **Accessoires** : Peuvent donner des bonus variés (vie, mana, dégâts, armure)
+4. **Consommables** : Objets à usage unique
+
+### Configuration d'un équipement
+
+Dans la fiche d'un équipement, vous pouvez configurer :
+
+#### Onglet "Effets"
+
+- **Bonus Armure** : Augmente l'armure totale du personnage
+- **Bonus Dégâts** : Augmente les dégâts totaux du personnage
+- **Bonus Vie Max** : Augmente la vie maximale
+- **Bonus Mana Max** : Augmente le mana maximum
+- **Durabilité** : État de l'équipement
+
+#### Onglet "Arme" (pour les armes uniquement)
+
+- **Dégâts de Base** : Dégâts propres à l'arme
+- **Type de Dégâts** : Physique, Magique, Feu, Glace, Foudre, Poison
+- **Statistique d'Attaque** : Quelle caractéristique utiliser pour les jets d'attaque
+- **Dégâts Totaux** : Calcul automatique (Base + Bonus)
+
+#### Onglet "Bonus Stats"
+
+- Même système que les objets normaux pour modifier les caractéristiques primaires
+
+### Équiper/Déséquiper
+
+- Cochez la case "Équipé" pour activer les effets d'un équipement
+- Les bonus ne s'appliquent que sur les équipements équipés
+- L'onglet Équipement affiche les totaux calculés automatiquement
+
+### Exemples d'équipements
+
+- **Épée de Feu** : 15 dégâts de base + Type Feu + Stat Physique
+- **Armure de Plates** : +8 Armure, -2 Physique
+- **Amulette de Vie** : +20 Vie Max, +5 Mental
+- **Bouclier du Gardien** : +5 Armure, +10 Vie Max
 
 ### Personnalisation
 

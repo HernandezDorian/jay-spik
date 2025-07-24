@@ -41,6 +41,16 @@ export const STATS_CONFIG = {
     icon: "fas fa-users",
   },
 
+  degats: {
+    label: "Dégâts",
+    description: "Puissance d'attaque, force destructrice",
+    defaultValue: 10,
+    minValue: 0,
+    maxValue: 200,
+    color: "#ff5722",
+    icon: "fas fa-sword",
+  },
+
   // Pour ajouter une nouvelle statistique, décommentez et adaptez :
   // nouvelleStat: {
   //   label: "Nouvelle Stat",

@@ -37,10 +37,40 @@ export class JaySpikActorSheet extends ActorSheet {
     // the context variable to see the structure, but some key properties for
     // sheets are the actor object, the data object, whether or not it's
     // editable, the items array, and the effects array.
-    const context = super.getData();
+    let context;
+    try {
+      context = super.getData();
+      if (!context || typeof context !== "object") {
+        console.warn(
+          "JaySpik: super.getData() returned invalid context, creating new one"
+        );
+        context = {
+          actor: this.actor,
+          data: this.actor.system,
+          items: this.actor.items,
+          effects: this.actor.effects,
+          editable: this.isEditable,
+        };
+      }
+    } catch (error) {
+      console.error("JaySpik: Error in super.getData():", error);
+      context = {
+        actor: this.actor,
+        data: this.actor.system,
+        items: this.actor.items,
+        effects: this.actor.effects,
+        editable: this.isEditable,
+      };
+    }
 
     // Use a safe clone of the actor data for further operations.
     const actorData = this.document.toPlainObject();
+
+    // Safety check: ensure actorData.system exists
+    if (!actorData.system) {
+      console.warn("JaySpik: actorData.system is missing, using empty object");
+      actorData.system = {};
+    }
 
     // Add the actor's data to context.data for easier access, as well as flags.
     context.system = actorData.system;
@@ -96,16 +126,60 @@ export class JaySpikActorSheet extends ActorSheet {
     // or setup anything else that's specific to this type
 
     // Enrichir les données des statistiques avec les valeurs modifiées par les bonus des items
-    if (context.system.abilities) {
+    if (context.system?.abilities) {
       for (const [key, ability] of Object.entries(context.system.abilities)) {
-        const modifiedValue = this.actor.system.getStatBonus(
-          key,
-          ability.value
-        );
-        ability.modifiedValue = modifiedValue;
-        ability.hasBonus = modifiedValue !== ability.value;
+        if (
+          ability &&
+          typeof ability === "object" &&
+          ability.value !== undefined
+        ) {
+          const baseValue = ability.value || 0;
+          const modifiedValue = this.actor.system.getStatBonus(key, baseValue);
+
+          // Créer une copie sécurisée de l'objet ability
+          const abilityClone = foundry.utils.deepClone(ability);
+          abilityClone.modifiedValue = modifiedValue;
+          abilityClone.hasBonus = modifiedValue !== baseValue;
+
+          context.system.abilities[key] = abilityClone;
+        }
       }
     }
+
+    // Préparer les données d'équipement
+    this._prepareEquipmentData(context);
+  }
+
+  /**
+   * Prépare les données spécifiques à l'équipement
+   * @param {Object} context Le contexte de données de la fiche
+   * @private
+   */
+  _prepareEquipmentData(context) {
+    // Filtrer les équipements
+    const equipment = (context.items || []).filter(
+      (item) => item.type === "equipment"
+    );
+    context.equipment = equipment;
+
+    // Calculer les totaux d'équipement
+    const totals = {
+      armor: 0,
+      health: 0,
+      mana: 0,
+      damage: 0,
+    };
+
+    for (const item of equipment) {
+      if (item.system?.equipped && item.system?.effects) {
+        totals.armor += item.system.effects.armor || 0;
+        totals.health += item.system.effects.health || 0;
+        totals.mana += item.system.effects.mana || 0;
+        totals.damage += item.system.effects.damage || 0;
+      }
+    }
+
+    context.equipmentTotals = totals;
   }
 
   /**
@@ -130,6 +204,20 @@ export class JaySpikActorSheet extends ActorSheet {
       9: [],
     };
 
+    // Containers for equipment
+    const weapons = [];
+    const armors = [];
+    const accessories = [];
+
+    // Safety check: ensure context.items exists and is an array
+    if (!context.items || !Array.isArray(context.items)) {
+      console.warn(
+        "_prepareItems: context.items is not an array",
+        context.items
+      );
+      context.items = [];
+    }
+
     // Iterate through items, allocating to containers
     for (let i of context.items) {
       i.img = i.img || Item.DEFAULT_ICON;
@@ -147,12 +235,61 @@ export class JaySpikActorSheet extends ActorSheet {
           spells[i.system.spellLevel].push(i);
         }
       }
+      // Append to equipment categories
+      else if (i.type === "equipment") {
+        if (i.system.equipmentType === "weapon") {
+          weapons.push(i);
+        } else if (["armor", "shield"].includes(i.system.equipmentType)) {
+          armors.push(i);
+        } else if (i.system.equipmentType === "accessory") {
+          accessories.push(i);
+        }
+      }
     }
+
+    // Calculate equipment bonuses
+    context.equipmentBonuses = this._calculateEquipmentBonuses(context.items);
 
     // Assign and return
     context.gear = gear;
     context.features = features;
     context.spells = spells;
+    context.weapons = weapons;
+    context.armors = armors;
+    context.accessories = accessories;
+  }
+
+  /**
+   * Calculate total bonuses from equipped items
+   * @param {Array} items - All items of the actor
+   * @returns {Object} Object containing total bonuses
+   * @private
+   */
+  _calculateEquipmentBonuses(items) {
+    const bonuses = {
+      armor: 0,
+      healthMax: 0,
+      powerMax: 0,
+      damage: 0,
+    };
+
+    // Safety check: ensure items is an array
+    if (!Array.isArray(items)) {
+      console.warn("_calculateEquipmentBonuses: items is not an array", items);
+      return bonuses;
+    }
+
+    // Sum bonuses from all equipped equipment
+    for (const item of items) {
+      if (item?.type === "equipment" && item?.system?.equipped) {
+        bonuses.armor += item.system.effects?.armor || 0;
+        bonuses.healthMax += item.system.effects?.healthMax || 0;
+        bonuses.powerMax += item.system.effects?.powerMax || 0;
+        bonuses.damage += item.system.effects?.damage || 0;
+      }
+    }
+
+    return bonuses;
   }
 
   /* -------------------------------------------- */
@@ -182,6 +319,9 @@ export class JaySpikActorSheet extends ActorSheet {
       item.delete();
       li.slideUp(200, () => this.render(false));
     });
+
+    // Equipment toggle (équiper/déséquiper)
+    html.on("change", ".equipment-toggle", this._onEquipmentToggle.bind(this));
 
     // Active Effect management
     html.on("click", ".effect-control", (ev) => {
@@ -335,6 +475,23 @@ export class JaySpikActorSheet extends ActorSheet {
         rollMode: game.settings.get("core", "rollMode"),
       });
       return roll;
+    }
+  }
+
+  /**
+   * Handle toggling equipment on/off
+   * @param {Event} event
+   * @private
+   */
+  async _onEquipmentToggle(event) {
+    event.preventDefault();
+    const checkbox = event.currentTarget;
+    const itemId = checkbox.dataset.itemId;
+    const item = this.actor.items.get(itemId);
+
+    if (item) {
+      await item.update({ "system.equipped": checkbox.checked });
+      this.render(false); // Re-render to update bonuses display
     }
   }
 }

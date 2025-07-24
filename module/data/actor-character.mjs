@@ -1,5 +1,5 @@
 import JaySpikActorBase from "./base-actor.mjs";
-import { generateAbilitiesSchema } from "../config/stats-config.mjs";
+import { STATS_CONFIG } from "../config/stats-config.mjs";
 
 export default class JaySpikCharacter extends JaySpikActorBase {
   static defineSchema() {
@@ -13,8 +13,28 @@ export default class JaySpikCharacter extends JaySpikActorBase {
       }),
     });
 
-    // Génération automatique des statistiques à partir de la configuration centralisée
-    schema.abilities = new fields.SchemaField(generateAbilitiesSchema(fields));
+    // Génération automatique du schéma des statistiques depuis la config centralisée
+    const abilitiesSchema = {};
+    for (const [key, config] of Object.entries(STATS_CONFIG)) {
+      abilitiesSchema[key] = new fields.SchemaField({
+        value: new fields.NumberField({
+          ...requiredInteger,
+          initial: config.initial || 50,
+          min: config.min || 0,
+          max: config.max || 100,
+        }),
+      });
+    }
+    schema.abilities = new fields.SchemaField(abilitiesSchema);
+
+    schema.armor = new fields.SchemaField({
+      value: new fields.NumberField({
+        required: true,
+        nullable: false,
+        initial: 0,
+        min: 0,
+      }),
+    });
 
     return schema;
   }
@@ -52,14 +72,23 @@ export default class JaySpikCharacter extends JaySpikActorBase {
    * @returns {number} La valeur modifiée après application des bonus
    */
   getStatBonus(stat, baseValue) {
-    let modifiedValue = baseValue;
+    let modifiedValue = baseValue || 0;
+
+    // Safety check: ensure parent and items exist
+    if (!this.parent?.items) {
+      return modifiedValue;
+    }
 
     // Parcourir tous les items de l'acteur
     for (const item of this.parent.items) {
-      if (item.system.bonusList && Array.isArray(item.system.bonusList)) {
+      if (item?.system?.bonusList && Array.isArray(item.system.bonusList)) {
         // Parcourir tous les bonus de cet item
         for (const bonus of item.system.bonusList) {
-          if (bonus.stat === stat && bonus.value != null && bonus.value !== 0) {
+          if (
+            bonus?.stat === stat &&
+            bonus?.value != null &&
+            bonus.value !== 0
+          ) {
             switch (bonus.operator) {
               case "+":
                 modifiedValue += Number(bonus.value);

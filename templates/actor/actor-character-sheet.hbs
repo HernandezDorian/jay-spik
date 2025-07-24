@@ -8,7 +8,7 @@
       {{!-- The grid classes are defined in scss/global/_grid.scss. To use,
       use both the "grid" and "grid-Ncol" class where "N" can be any number
       from 1 to 12 and will create that number of columns.  --}}
-      <div class="resources grid grid-3col">
+      <div class="resources grid grid-4col">
 
         {{!-- "flex-group-center" is also defined in the _grid.scss file
         and it will add a small amount of padding, a border, and will
@@ -32,6 +32,13 @@
         </div>
 
         <div class="resource flex-group-center">
+          <label for="system.armor.value" class="resource-label">Armure</label>
+          <div class="resource-content flexrow flex-center flex-between">
+          <input type="text" name="system.armor.value" value="{{system.armor.value}}" data-dtype="Number"/>
+          </div>
+        </div>
+
+        <div class="resource flex-group-center">
           <label for="system.attributes.level.value" class="resource-label">Niveau</label>
           <div class="resource-content flexrow flex-center flex-between">
           <input type="text" name="system.attributes.level.value" value="{{system.attributes.level.value}}" data-dtype="Number"/>
@@ -46,6 +53,7 @@
   <nav class="sheet-tabs tabs" data-group="primary">
     {{!-- Default tab is specified in actor-sheet.mjs --}}
     <a class="item" data-tab="features">Features</a>
+    <a class="item" data-tab="equipment">Équipement</a>
     <a class="item" data-tab="description">Description</a>
     <a class="item" data-tab="items">Items</a>
     <a class="item" data-tab="spells">Spells</a>
@@ -68,7 +76,7 @@
             <div class="ability flexrow flex-group-center">
               <label for="system.abilities.{{key}}.value" class="resource-label rollable flexlarge align-left" data-roll="1d100" data-ability="{{key}}" data-label="{{lookup @root.config.abilities key}}">{{lookup @root.config.abilities key}}</label>
               <input type="text" name="system.abilities.{{key}}.value" value="{{ability.value}}" data-dtype="Number" min="0" max="100"/>
-              <span class="ability-mod rollable{{#if ability.hasBonus}} has-bonus{{/if}}" data-roll="1d100" data-ability="{{key}}" data-label="{{lookup @root.config.abilities key}}" title="{{#if ability.hasBonus}}Base: {{ability.value}} | Modifié: {{ability.modifiedValue}}{{else}}{{ability.value}}{{/if}}">{{ability.modifiedValue}}</span>
+              <span class="ability-mod rollable{{#if ability.hasBonus}} has-bonus{{/if}}" data-roll="1d100" data-ability="{{key}}" data-label="{{lookup @root.config.abilities key}}" title="{{#if ability.hasBonus}}Base: {{ability.value}} | Modifié: {{#if ability.modifiedValue}}{{ability.modifiedValue}}{{else}}{{ability.value}}{{/if}}{{else}}{{ability.value}}{{/if}}">{{#if ability.modifiedValue}}{{ability.modifiedValue}}{{else}}{{ability.value}}{{/if}}</span>
             </div>
             {{/each}}
           </div>
@@ -81,6 +89,11 @@
         </section>
 
       </section>
+    </div>
+
+    {{!-- Equipment Tab --}}
+    <div class="tab equipment" data-group="primary" data-tab="equipment">
+      {{> "systems/jay-spik/templates/actor/parts/actor-equipment.hbs"}}
     </div>
 
     {{!-- Biography Tab --}}

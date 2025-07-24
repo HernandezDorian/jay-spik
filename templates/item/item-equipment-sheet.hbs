@@ -1,0 +1,254 @@
+<form class="{{cssClass}}" autocomplete="off">
+  <header class="sheet-header">
+    <img
+      class="profile-img"
+      src="{{item.img}}"
+      data-edit="img"
+      title="{{item.name}}"
+    />
+    <div class="header-fields">
+      <h1 class="charname"><input
+          name="name"
+          type="text"
+          value="{{item.name}}"
+          placeholder="Nom de l'équipement"
+        /></h1>
+      
+      <div class="grid grid-3col">
+        <!-- Type d'équipement -->
+        <div class="resource">
+          <label class="resource-label">Type</label>
+          <select name="system.equipmentType" data-dtype="String">
+            <option value="weapon" {{#if (eq system.equipmentType "weapon")}}selected{{/if}}>Arme</option>
+            <option value="armor" {{#if (eq system.equipmentType "armor")}}selected{{/if}}>Armure</option>
+            <option value="shield" {{#if (eq system.equipmentType "shield")}}selected{{/if}}>Bouclier</option>
+            <option value="accessory" {{#if (eq system.equipmentType "accessory")}}selected{{/if}}>Accessoire</option>
+            <option value="consumable" {{#if (eq system.equipmentType "consumable")}}selected{{/if}}>Consommable</option>
+          </select>
+        </div>
+        
+        <!-- Valeur -->
+        <div class="resource">
+          <label class="resource-label">Valeur</label>
+          <input
+            type="text"
+            name="system.value"
+            value="{{system.value}}"
+            data-dtype="Number"
+          />
+        </div>
+        
+        <!-- Poids -->
+        <div class="resource">
+          <label class="resource-label">Poids</label>
+          <input
+            type="text"
+            name="system.weight"
+            value="{{system.weight}}"
+            data-dtype="Number"
+          />
+        </div>
+      </div>
+    </div>
+  </header>
+
+  {{! Sheet Tab Navigation }}
+  <nav class="sheet-tabs tabs" data-group="primary">
+    <a class="item" data-tab="description">Description</a>
+    <a class="item" data-tab="effects">Effets</a>
+    <a class="item" data-tab="weapon">Arme</a>
+    <a class="item" data-tab="bonuses">Bonus Stats</a>
+  </nav>
+
+  {{! Sheet Body }}
+  <section class="sheet-body">
+
+    {{! Description Tab }}
+    <div class="tab" data-group="primary" data-tab="description">
+      {{editor
+        enrichedDescription
+        target="system.description"
+        engine="prosemirror"
+        button=true
+        editable=editable
+      }}
+    </div>
+
+    {{! Effets sur les attributs Tab }}
+    <div class="tab effects" data-group="primary" data-tab="effects">
+      <h3>Effets sur les attributs du personnage</h3>
+      
+      <div class="grid grid-2col">
+        <!-- Bonus Armure -->
+        <div class="resource">
+          <label class="resource-label">Bonus Armure</label>
+          <input
+            type="text"
+            name="system.effects.armor"
+            value="{{system.effects.armor}}"
+            data-dtype="Number"
+            placeholder="0"
+          />
+        </div>
+        
+        <!-- Bonus Dégâts -->
+        <div class="resource">
+          <label class="resource-label">Bonus Dégâts</label>
+          <input
+            type="text"
+            name="system.effects.damage"
+            value="{{system.effects.damage}}"
+            data-dtype="Number"
+            placeholder="0"
+          />
+        </div>
+        
+        <!-- Bonus Vie Max -->
+        <div class="resource">
+          <label class="resource-label">Bonus Vie Max</label>
+          <input
+            type="text"
+            name="system.effects.healthMax"
+            value="{{system.effects.healthMax}}"
+            data-dtype="Number"
+            placeholder="0"
+          />
+        </div>
+        
+        <!-- Bonus Mana Max -->
+        <div class="resource">
+          <label class="resource-label">Bonus Mana Max</label>
+          <input
+            type="text"
+            name="system.effects.powerMax"
+            value="{{system.effects.powerMax}}"
+            data-dtype="Number"
+            placeholder="0"
+          />
+        </div>
+      </div>
+
+      <!-- Durabilité -->
+      <h3>Durabilité</h3>
+      <div class="grid grid-2col">
+        <div class="resource">
+          <label class="resource-label">Durabilité Actuelle</label>
+          <input
+            type="text"
+            name="system.durability.current"
+            value="{{system.durability.current}}"
+            data-dtype="Number"
+            min="0"
+            max="{{system.durability.max}}"
+          />
+        </div>
+        
+        <div class="resource">
+          <label class="resource-label">Durabilité Max</label>
+          <input
+            type="text"
+            name="system.durability.max"
+            value="{{system.durability.max}}"
+            data-dtype="Number"
+            min="1"
+          />
+        </div>
+      </div>
+    </div>
+
+    {{! Propriétés d'arme Tab }}
+    <div class="tab weapon" data-group="primary" data-tab="weapon">
+      <h3>Propriétés d'Arme</h3>
+      <p><em>Ces options ne s'appliquent que si l'équipement est une arme.</em></p>
+      
+      <div class="grid grid-2col">
+        <!-- Dégâts de base -->
+        <div class="resource">
+          <label class="resource-label">Dégâts de Base</label>
+          <input
+            type="text"
+            name="system.weapon.baseDamage"
+            value="{{system.weapon.baseDamage}}"
+            data-dtype="Number"
+            min="0"
+            placeholder="0"
+          />
+        </div>
+        
+        <!-- Type de dégâts -->
+        <div class="resource">
+          <label class="resource-label">Type de Dégâts</label>
+          <select name="system.weapon.damageType" data-dtype="String">
+            <option value="physical" {{#if (eq system.weapon.damageType "physical")}}selected{{/if}}>Physique</option>
+            <option value="magical" {{#if (eq system.weapon.damageType "magical")}}selected{{/if}}>Magique</option>
+            <option value="fire" {{#if (eq system.weapon.damageType "fire")}}selected{{/if}}>Feu</option>
+            <option value="ice" {{#if (eq system.weapon.damageType "ice")}}selected{{/if}}>Glace</option>
+            <option value="lightning" {{#if (eq system.weapon.damageType "lightning")}}selected{{/if}}>Foudre</option>
+            <option value="poison" {{#if (eq system.weapon.damageType "poison")}}selected{{/if}}>Poison</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- Stat d'attaque -->
+      <div class="resource">
+        <label class="resource-label">Statistique d'Attaque</label>
+        <select name="system.weapon.attackStat" data-dtype="String">
+          {{#each config.abilities}}
+          <option value="{{@key}}" {{#if (eq ../system.weapon.attackStat @key)}}selected{{/if}}>{{this}}</option>
+          {{/each}}
+        </select>
+      </div>
+      
+      <!-- Dégâts totaux calculés -->
+      <div class="resource">
+        <label class="resource-label">Dégâts Totaux</label>
+        <span style="font-weight: bold; color: #d4362a;">
+          {{system.weapon.baseDamage}}{{#if system.effects.damage}} + {{system.effects.damage}}{{/if}} = {{add system.weapon.baseDamage system.effects.damage}}
+        </span>
+      </div>
+    </div>
+
+    {{! Bonus aux statistiques Tab }}
+    <div class="tab bonuses" data-group="primary" data-tab="bonuses">
+      <h3>Bonus aux Statistiques</h3>
+      <p><em>Ces bonus s'appliquent aux jets de caractéristiques (Mental, Physique, Social, etc.)</em></p>
+      
+      <div class="bonus-list">
+        {{#each system.bonusList}}
+        <div class="grid grid-4col bonus-row" data-index="{{@index}}">
+          <div class="grid-span-1">
+            <select name="system.bonusList.{{@index}}.stat" data-dtype="String">
+              <option value="">-- Choisir une stat --</option>
+              {{#each @root.config.abilities}}
+              <option value="{{@key}}" {{#if (eq ../stat @key)}}selected{{/if}}>{{this}}</option>
+              {{/each}}
+            </select>
+          </div>
+          <div class="grid-span-1">
+            <select name="system.bonusList.{{@index}}.operator" data-dtype="String">
+              <option value="+" {{#if (eq operator "+")}}selected{{/if}}>+</option>
+              <option value="-" {{#if (eq operator "-")}}selected{{/if}}>-</option>
+              <option value="*" {{#if (eq operator "*")}}selected{{/if}}>*</option>
+              <option value="/" {{#if (eq operator "/")}}selected{{/if}}>/</option>
+            </select>
+          </div>
+          <div class="grid-span-1">
+            <input type="text" name="system.bonusList.{{@index}}.value" value="{{value}}" data-dtype="Number" placeholder="Valeur">
+          </div>
+          <div class="grid-span-1">
+            <button type="button" class="remove-bonus" data-index="{{@index}}">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+        {{/each}}
+        
+        <div class="grid grid-1col">
+          <button type="button" class="add-bonus">
+            <i class="fas fa-plus"></i> Ajouter un bonus
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</form>
