@@ -1,0 +1,74 @@
+<form class='{{cssClass}}' autocomplete='off'>
+  <header class='sheet-header'>
+    <img
+      class='profile-img'
+      src='{{item.img}}'
+      data-edit='img'
+      title='{{item.name}}'
+    />
+    <div class='header-fields'>
+      <h1 class='charname'><input
+          name='name'
+          type='text'
+          value='{{item.name}}'
+          placeholder='Name'
+        /></h1>
+    </div>
+  </header>
+
+  {{! Sheet Tab Navigation }}
+  <nav class='sheet-tabs tabs' data-group='primary'>
+    <a class='item' data-tab='description'>Description</a>
+    <a class='item' data-tab='attributes'>Attributes</a>
+  </nav>
+
+  {{! Sheet Body }}
+  <section class='sheet-body'>
+
+    {{! Description Tab }}
+    <div class='tab' data-group='primary' data-tab='description'>
+      {{! Editors must receive enriched text data from getData to properly handle rolls }}
+      {{editor
+        enrichedDescription
+        target='system.description'
+        engine='prosemirror'
+        button=true
+        editable=editable
+      }}
+    </div>
+
+    {{! Attributes Tab }}
+    <div class='tab attributes' data-group='primary' data-tab='attributes'>
+      {{! As you add new fields, add them in here! }}
+      <div class='resource'>
+        <label class='resource-label'>Spell Level</label>
+        <input
+          type='text'
+          name='system.spellLevel'
+          value='{{system.spellLevel}}'
+          data-dtype='Number'
+        />
+      </div>
+      <div class='resource'>
+        <label class='resource-label'>Stat utilisée</label>
+        <select name='system.stat'>
+          <option value='mental' {{#if (eq system.stat 'mental')}}selected{{/if}}>Mental</option>
+          <option value='physique' {{#if (eq system.stat 'physique')}}selected{{/if}}>Physique</option>
+          <option value='social' {{#if (eq system.stat 'social')}}selected{{/if}}>Social</option>
+        </select>
+      </div>
+      <div class='resource'>
+        <label class='resource-label'>Formule de jet</label>
+        <input type='text' name='system.formula' value='{{system.formula}}' placeholder='1d100'/>
+      </div>
+      <div class='resource'>
+        <label class='resource-label'>Avantage/Désavantage</label>
+        <select name='system.advantage'>
+          <option value='' {{#if (eq system.advantage '')}}selected{{/if}}>Aucun</option>
+          <option value='advantage' {{#if (eq system.advantage 'advantage')}}selected{{/if}}>Avantage</option>
+          <option value='disadvantage' {{#if (eq system.advantage 'disadvantage')}}selected{{/if}}>Désavantage</option>
+        </select>
+      </div>
+    </div>
+  </section>
+</form>

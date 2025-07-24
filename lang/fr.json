@@ -1,0 +1,40 @@
+{
+  "JAY_SPIK": {
+    "Ability": {
+      "Mental": { "long": "Mental", "abbr": "men" },
+      "Physique": { "long": "Physique", "abbr": "phy" },
+      "Social": { "long": "Social", "abbr": "soc" }
+    },
+    "Health": "Vie",
+    "Mana": "Mana",
+    "SheetLabels": {
+      "Actor": "Fiche d'Acteur JaySpik",
+      "Item": "Fiche d'Objet JaySpik"
+    },
+    "Item": {
+      "Spell": {
+        "SpellLVL": "Sorts de niveau {level}",
+        "AddLVL": "Ajouter NVL {level}"
+      }
+    },
+    "Effect": {
+      "Source": "Source",
+      "Toggle": "Activer/Désactiver l'Effet",
+      "Temporary": "Effets Temporaires",
+      "Passive": "Effets Passifs",
+      "Inactive": "Effets Inactifs"
+    }
+  },
+
+  "TYPES": {
+    "Actor": {
+      "character": "Personnage",
+      "npc": "PNJ"
+    },
+    "Item": {
+      "item": "Objet",
+      "feature": "Capacité",
+      "spell": "Sort"
+    }
+  }
+}

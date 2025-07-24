@@ -1,0 +1,466 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap");
+/* Global styles */
+.window-app {
+  font-family: "Roboto", sans-serif;
+}
+
+.rollable:hover,
+.rollable:focus {
+  color: #000;
+  text-shadow: 0 0 10px red;
+  cursor: pointer;
+}
+
+.grid,
+.grid-2col {
+  display: grid;
+  grid-column: span 2 / span 2;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 10px 0;
+  padding: 0;
+}
+
+.grid-3col {
+  grid-column: span 3 / span 3;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid-4col {
+  grid-column: span 4 / span 4;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.grid-5col {
+  grid-column: span 5 / span 5;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.grid-6col {
+  grid-column: span 6 / span 6;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.grid-7col {
+  grid-column: span 7 / span 7;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.grid-8col {
+  grid-column: span 8 / span 8;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+
+.grid-9col {
+  grid-column: span 9 / span 9;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+}
+
+.grid-10col {
+  grid-column: span 10 / span 10;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+}
+
+.grid-11col {
+  grid-column: span 11 / span 11;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+}
+
+.grid-12col {
+  grid-column: span 12 / span 12;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.grid-start-2 {
+  grid-column-start: 2;
+}
+
+.grid-start-3 {
+  grid-column-start: 3;
+}
+
+.grid-start-4 {
+  grid-column-start: 4;
+}
+
+.grid-start-5 {
+  grid-column-start: 5;
+}
+
+.grid-start-6 {
+  grid-column-start: 6;
+}
+
+.grid-start-7 {
+  grid-column-start: 7;
+}
+
+.grid-start-8 {
+  grid-column-start: 8;
+}
+
+.grid-start-9 {
+  grid-column-start: 9;
+}
+
+.grid-start-10 {
+  grid-column-start: 10;
+}
+
+.grid-start-11 {
+  grid-column-start: 11;
+}
+
+.grid-start-12 {
+  grid-column-start: 12;
+}
+
+.grid-span-2 {
+  grid-column-end: span 2;
+}
+
+.grid-span-3 {
+  grid-column-end: span 3;
+}
+
+.grid-span-4 {
+  grid-column-end: span 4;
+}
+
+.grid-span-5 {
+  grid-column-end: span 5;
+}
+
+.grid-span-6 {
+  grid-column-end: span 6;
+}
+
+.grid-span-7 {
+  grid-column-end: span 7;
+}
+
+.grid-span-8 {
+  grid-column-end: span 8;
+}
+
+.grid-span-9 {
+  grid-column-end: span 9;
+}
+
+.grid-span-10 {
+  grid-column-end: span 10;
+}
+
+.grid-span-11 {
+  grid-column-end: span 11;
+}
+
+.grid-span-12 {
+  grid-column-end: span 12;
+}
+
+.flex-group-center,
+.flex-group-left,
+.flex-group-right {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.flex-group-left {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.flex-group-right {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.flexshrink {
+  flex: 0;
+}
+
+.flex-between {
+  justify-content: space-between;
+}
+
+.flexlarge {
+  flex: 2;
+}
+
+.align-left {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.align-right {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.align-center {
+  justify-content: center;
+  text-align: center;
+}
+
+/* Styles limited to jay-spik sheets */
+.jay-spik .item-form {
+  font-family: "Roboto", sans-serif;
+}
+.jay-spik .sheet-header {
+  flex: 0 auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+}
+.jay-spik .sheet-header .profile-img {
+  flex: 0 0 100px;
+  height: 100px;
+  margin-right: 10px;
+}
+.jay-spik .sheet-header .header-fields {
+  flex: 1;
+}
+.jay-spik .sheet-header h1.charname {
+  height: 50px;
+  padding: 0px;
+  margin: 5px 0;
+  border-bottom: 0;
+}
+.jay-spik .sheet-header h1.charname input {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+.jay-spik .sheet-tabs {
+  flex: 0;
+}
+.jay-spik .sheet-body,
+.jay-spik .sheet-body .tab,
+.jay-spik .sheet-body .tab .editor {
+  height: 100%;
+}
+.jay-spik .tox .tox-editor-container {
+  background: #fff;
+}
+.jay-spik .tox .tox-edit-area {
+  padding: 0 8px;
+}
+.jay-spik .resource-label {
+  font-weight: bold;
+}
+.jay-spik .items-header {
+  height: 28px;
+  margin: 2px 0;
+  padding: 0;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.05);
+  border: 2px groove #eeede0;
+  font-weight: bold;
+}
+.jay-spik .items-header > * {
+  font-size: 14px;
+  text-align: center;
+}
+.jay-spik .items-header .item-name {
+  font-weight: bold;
+  padding-left: 5px;
+  text-align: left;
+  display: flex;
+}
+.jay-spik .items-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  color: #444;
+}
+.jay-spik .items-list .item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.jay-spik .items-list .item-name {
+  flex: 2;
+  margin: 0;
+  overflow: hidden;
+  font-size: 13px;
+  text-align: left;
+  align-items: center;
+  display: flex;
+}
+.jay-spik .items-list .item-name h3,
+.jay-spik .items-list .item-name h4 {
+  margin: 0;
+  white-space: nowrap;
+  overflow-x: hidden;
+}
+.jay-spik .items-list .item-controls {
+  display: flex;
+  flex: 0 0 100px;
+  justify-content: flex-end;
+}
+.jay-spik .items-list .item-controls a {
+  font-size: 12px;
+  text-align: center;
+  margin: 0 6px;
+}
+.jay-spik .items-list .item {
+  align-items: center;
+  padding: 0 2px;
+  border-bottom: 1px solid #c9c7b8;
+}
+.jay-spik .items-list .item:last-child {
+  border-bottom: none;
+}
+.jay-spik .items-list .item .item-name {
+  color: #191813;
+}
+.jay-spik .items-list .item .item-name .item-image {
+  flex: 0 0 30px;
+  height: 30px;
+  background-size: 30px;
+  border: none;
+  margin-right: 5px;
+}
+.jay-spik .items-list .item-prop {
+  text-align: center;
+  border-left: 1px solid #c9c7b8;
+  border-right: 1px solid #c9c7b8;
+  font-size: 12px;
+}
+.jay-spik .items-list .items-header {
+  height: 28px;
+  margin: 2px 0;
+  padding: 0;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.05);
+  border: 2px groove #eeede0;
+  font-weight: bold;
+}
+.jay-spik .items-list .items-header > * {
+  font-size: 12px;
+  text-align: center;
+}
+.jay-spik .items-list .items-header .item-name {
+  padding-left: 5px;
+  text-align: left;
+}
+.jay-spik .item-formula {
+  flex: 0 0 200px;
+  padding: 0 8px;
+}
+.jay-spik .effects .item .effect-source,
+.jay-spik .effects .item .effect-duration,
+.jay-spik .effects .item .effect-controls {
+  text-align: center;
+  border-left: 1px solid #c9c7b8;
+  border-right: 1px solid #c9c7b8;
+  font-size: 12px;
+}
+.jay-spik .effects .item .effect-controls {
+  border: none;
+}
+
+/* ===== Styles pour les stats basées sur 100 ===== */
+
+/* Container des abilities */
+.jay-spik .abilities {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid #c9c7b8;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+/* Ligne d'ability individuelle */
+.jay-spik .ability {
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.jay-spik .ability:last-child {
+  border-bottom: none;
+}
+
+/* Label des abilities (cliquable pour les jets) */
+.jay-spik .ability .resource-label {
+  font-weight: bold;
+  color: #333;
+  min-width: 80px;
+}
+
+.jay-spik .ability .resource-label:hover {
+  color: #d4362a;
+  text-shadow: 0 0 5px rgba(212, 54, 42, 0.5);
+}
+
+/* Input des valeurs d'abilities */
+.jay-spik .ability input[type="text"] {
+  width: 60px;
+  text-align: center;
+  border: 1px solid #c9c7b8;
+  border-radius: 3px;
+  font-weight: bold;
+  background: white;
+}
+
+/* Affichage de la valeur (span cliquable) */
+.jay-spik .ability .ability-mod {
+  min-width: 40px;
+  text-align: center;
+  font-weight: bold;
+  color: #555;
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.jay-spik .ability .ability-mod:hover {
+  background: rgba(212, 54, 42, 0.1);
+  color: #d4362a;
+}
+
+/* Style pour les valeurs élevées (80+) */
+.jay-spik .ability input[value*="8"][value*="0"],
+.jay-spik .ability input[value*="9"][value*="0"],
+.jay-spik .ability input[value="100"] {
+  background-color: rgba(76, 175, 80, 0.1);
+  border-color: #4caf50;
+}
+
+/* Style pour les valeurs moyennes (40-79) */
+.jay-spik .ability input[value*="4"][value*="0"],
+.jay-spik .ability input[value*="5"][value*="0"],
+.jay-spik .ability input[value*="6"][value*="0"],
+.jay-spik .ability input[value*="7"][value*="0"] {
+  background-color: rgba(255, 193, 7, 0.1);
+  border-color: #ffc107;
+}
+
+/* Style pour les valeurs faibles (0-39) */
+.jay-spik .ability input[value*="1"][value*="0"],
+.jay-spik .ability input[value*="2"][value*="0"],
+.jay-spik .ability input[value*="3"][value*="0"] {
+  background-color: rgba(244, 67, 54, 0.1);
+  border-color: #f44336;
+}
+
+/* Titre de section pour les abilities */
+.jay-spik .abilities::before {
+  content: "Caractéristiques (0-100)";
+  display: block;
+  font-weight: bold;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 8px;
+  text-align: center;
+  border-bottom: 1px solid #c9c7b8;
+  padding-bottom: 5px;
+}

@@ -1,0 +1,38 @@
+{
+  "JAY_SPIK": {
+    "Ability": {
+      "Mental": { "long": "Mental", "abbr": "men" },
+      "Physique": { "long": "Physiquee", "abbr": "phy" },
+      "Social": { "long": "Social", "abbr": "soc" }
+    },
+    "SheetLabels": {
+      "Actor": "JaySpik Actor Sheet",
+      "Item": "JaySpik Item Sheet"
+    },
+    "Item": {
+      "Spell": {
+        "SpellLVL": "Level {level} Spells",
+        "AddLVL": "Add LVL {level}"
+      }
+    },
+    "Effect": {
+      "Source": "Source",
+      "Toggle": "Toggle Effect",
+      "Temporary": "Temporary Effects",
+      "Passive": "Passive Effects",
+      "Inactive": "Inactive Effects"
+    }
+  },
+
+  "TYPES": {
+    "Actor": {
+      "character": "Character",
+      "npc": "NPC"
+    },
+    "Item": {
+      "item": "Item",
+      "feature": "Feature",
+      "spell": "Spell"
+    }
+  }
+}
