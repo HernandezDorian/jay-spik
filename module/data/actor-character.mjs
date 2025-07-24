@@ -113,4 +113,56 @@ export default class JaySpikCharacter extends JaySpikActorBase {
     // S'assurer que la valeur reste dans les limites (0-100 pour ce système)
     return Math.max(0, Math.min(100, Math.round(modifiedValue)));
   }
+
+  /**
+   * Calcule l'armure totale de l'acteur (base + équipement)
+   * @returns {number} La valeur totale d'armure
+   */
+  getTotalArmor() {
+    let totalArmor = this.armor?.value || 0;
+
+    // Safety check: ensure parent and items exist
+    if (!this.parent?.items) {
+      return totalArmor;
+    }
+
+    // Ajouter les bonus d'armure de l'équipement
+    for (const item of this.parent.items) {
+      if (
+        item?.type === "equipment" &&
+        item?.system?.equipped &&
+        item?.system?.effects?.armor
+      ) {
+        totalArmor += item.system.effects.armor;
+      }
+    }
+
+    return Math.max(0, totalArmor);
+  }
+
+  /**
+   * Applique des dégâts à l'acteur en tenant compte de l'armure
+   * @param {number} damage - Les dégâts bruts à appliquer
+   * @returns {Object} Résultat avec les dégâts finaux et l'armure utilisée
+   */
+  async applyDamage(damage) {
+    const armor = this.getTotalArmor();
+    const finalDamage = Math.max(0, damage - armor);
+
+    if (finalDamage > 0) {
+      const currentHealth = this.health.value;
+      const newHealth = Math.max(0, currentHealth - finalDamage);
+
+      await this.parent.update({
+        "system.health.value": newHealth,
+      });
+    }
+
+    return {
+      damageRolled: damage,
+      armor: armor,
+      finalDamage: finalDamage,
+      blocked: damage - finalDamage,
+    };
+  }
 }

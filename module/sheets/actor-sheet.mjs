@@ -555,10 +555,92 @@ export class JaySpikActorSheet extends ActorSheet {
     const roll = new Roll(formula, rollData);
     await roll.evaluate();
 
-    // Afficher le résultat dans le chat
-    roll.toMessage({
+    // Obtenir les cibles actuelles
+    const targets = Array.from(game.user.targets);
+
+    if (targets.length === 0) {
+      // Pas de cibles : affichage simple dans le chat
+      roll.toMessage({
+        speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+        flavor: `<strong>${item.name}</strong> - Dégâts`,
+        rollMode: game.settings.get("core", "rollMode"),
+      });
+      ui.notifications.info(
+        "Aucune cible sélectionnée. Sélectionnez une cible pour appliquer automatiquement les dégâts."
+      );
+      return;
+    }
+
+    // Appliquer les dégâts aux cibles
+    await this._applyDamageToTargets(roll, item, targets);
+  }
+
+  /**
+   * Apply damage to targeted actors, accounting for armor
+   * @param {Roll} roll - The damage roll
+   * @param {Item} item - The weapon/spell used
+   * @param {Array} targets - Array of targeted tokens
+   * @private
+   */
+  async _applyDamageToTargets(roll, item, targets) {
+    const totalDamage = roll.total;
+    const results = [];
+
+    for (const target of targets) {
+      if (!target.actor) continue;
+
+      // Utiliser la méthode applyDamage du modèle d'acteur
+      const result = await target.actor.system.applyDamage(totalDamage);
+      result.target = target.actor.name;
+      results.push(result);
+    }
+
+    // Créer le message de chat avec les résultats
+    await this._createDamageMessage(roll, item, results);
+  }
+
+  /**
+   * Create a chat message showing damage results
+   * @param {Roll} roll - The damage roll
+   * @param {Item} item - The weapon/spell used
+   * @param {Array} results - Array of damage results per target
+   * @private
+   */
+  async _createDamageMessage(roll, item, results) {
+    let messageContent = `<div class="damage-results">
+      <h3><strong>${item.name}</strong> - Dégâts</h3>
+      <div class="damage-roll">Dégâts lancés: <strong>${roll.total}</strong></div>
+    `;
+
+    for (const result of results) {
+      messageContent += `
+        <div class="target-result" style="margin: 5px 0; padding: 5px; border: 1px solid #ccc; border-radius: 3px;">
+          <strong>${result.target}</strong><br/>
+          <span style="color: #666;">Armure: ${result.armor}</span><br/>
+          <span style="color: ${
+            result.finalDamage > 0 ? "#d32f2f" : "#4caf50"
+          };">
+            ${
+              result.finalDamage > 0
+                ? `${result.finalDamage} dégâts infligés`
+                : "Aucun dégât (bloqué par l'armure)"
+            }
+          </span>
+          ${
+            result.blocked > 0
+              ? `<br/><span style="color: #ff9800; font-size: 0.9em;">(${result.blocked} bloqués par l'armure)</span>`
+              : ""
+          }
+        </div>
+      `;
+    }
+
+    messageContent += "</div>";
+
+    // Afficher le roll et les résultats
+    await roll.toMessage({
       speaker: ChatMessage.getSpeaker({ actor: this.actor }),
-      flavor: `<strong>${item.name}</strong> - Dégâts`,
+      flavor: messageContent,
       rollMode: game.settings.get("core", "rollMode"),
     });
   }

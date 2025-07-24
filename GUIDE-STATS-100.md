@@ -139,3 +139,44 @@ magie: {
 ```
 
 Les valeurs par défaut et limites peuvent aussi être ajustées dans ce même fichier.
+
+## Système de Combat et Dégâts
+
+### Application automatique des dégâts
+
+Le système inclut maintenant un système de combat automatisé qui utilise le système de ciblage de FoundryVTT :
+
+#### Comment ça fonctionne :
+
+1. **Sélectionnez une cible** en cliquant sur un token avec la touche `T` (ou clic droit → "Cibler")
+2. **Lancez les dégâts** avec le bouton de dégâts sur une arme ou un sort
+3. **Les dégâts sont appliqués automatiquement** en tenant compte de l'armure de la cible
+
+#### Calcul des dégâts :
+
+```
+Dégâts finaux = max(0, Dégâts lancés - Armure totale de la cible)
+```
+
+#### Armure totale :
+
+L'armure totale d'un personnage = **Armure de base** + **Bonus d'armure des équipements**
+
+#### Exemples :
+
+- **Attaque à 8 dégâts** contre une cible avec **3 d'armure** → **5 dégâts** infligés
+- **Attaque à 4 dégâts** contre une cible avec **6 d'armure** → **0 dégât** (bloqué)
+- **Sort à 12 dégâts** contre une cible **sans armure** → **12 dégâts** infligés
+
+#### Messages de chat :
+
+Le système affiche dans le chat :
+
+- Les dégâts lancés
+- L'armure de chaque cible
+- Les dégâts finaux infligés
+- Les dégâts bloqués par l'armure (le cas échéant)
+
+#### Sans cible :
+
+Si aucune cible n'est sélectionnée, les dégâts sont simplement affichés dans le chat sans être appliqués.
