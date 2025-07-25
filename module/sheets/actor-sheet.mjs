@@ -73,7 +73,8 @@ export class JaySpikActorSheet extends ActorSheet {
     }
 
     // Add the actor's data to context.data for easier access, as well as flags.
-    context.system = actorData.system;
+    // Use deep clone to avoid reference issues
+    context.system = foundry.utils.deepClone(actorData.system);
     context.flags = actorData.flags;
 
     // Adding a pointer to CONFIG.JAY_SPIK
@@ -148,6 +149,11 @@ export class JaySpikActorSheet extends ActorSheet {
 
     // Préparer les données d'équipement
     this._prepareEquipmentData(context);
+
+    // S'assurer que le champ skills existe pour les personnages existants
+    if (!context.system.skills) {
+      context.system.skills = [];
+    }
   }
 
   /**
@@ -325,6 +331,11 @@ export class JaySpikActorSheet extends ActorSheet {
 
     // Item damage rolls
     html.on("click", ".item-roll-damage", this._onItemDamageRoll.bind(this));
+
+    // Skills management
+    html.on("click", ".add-skill", this._onAddSkill.bind(this));
+    html.on("click", ".skill-delete", this._onDeleteSkill.bind(this));
+    html.on("click", ".skill-roll", this._onSkillRoll.bind(this));
 
     // Active Effect management
     html.on("click", ".effect-control", (ev) => {
@@ -894,5 +905,77 @@ export class JaySpikActorSheet extends ActorSheet {
 
     // Créer le message avec les boutons
     await ChatMessage.create(messageData);
+  }
+
+  /* -------------------------------------------- */
+  /*  Skills Management                           */
+  /* -------------------------------------------- */
+
+  /**
+   * Handle adding a new skill
+   * @param {Event} event   The originating click event
+   * @private
+   */
+  async _onAddSkill(event) {
+    event.preventDefault();
+
+    const skillData = {
+      name: "Nouvelle Compétence",
+      baseStat: "physique",
+      bonus: 0,
+      description: "",
+    };
+
+    await this.actor.system.addSkill(skillData);
+  }
+
+  /**
+   * Handle deleting a skill
+   * @param {Event} event   The originating click event
+   * @private
+   */
+  async _onDeleteSkill(event) {
+    event.preventDefault();
+
+    const skillId = event.currentTarget.dataset.skillId;
+    const skill = this.actor.system.skills.find((s) => s.id === skillId);
+
+    if (!skill) {
+      ui.notifications.error("Compétence non trouvée");
+      return;
+    }
+
+    // Demander confirmation
+    const confirmed = await Dialog.confirm({
+      title: "Supprimer la compétence",
+      content: `<p>Êtes-vous sûr de vouloir supprimer la compétence <strong>${skill.name}</strong> ?</p>`,
+      yes: () => true,
+      no: () => false,
+      defaultYes: false,
+    });
+
+    if (confirmed) {
+      await this.actor.system.removeSkill(skillId);
+    }
+  }
+
+  /**
+   * Handle rolling a skill
+   * @param {Event} event   The originating click event
+   * @private
+   */
+  async _onSkillRoll(event) {
+    event.preventDefault();
+
+    const skillId = event.currentTarget.dataset.skillId;
+    const skill = this.actor.system.skills.find((s) => s.id === skillId);
+
+    if (!skill) {
+      ui.notifications.error("Compétence non trouvée");
+      return;
+    }
+
+    // Effectuer le jet de compétence
+    await this.actor.system.rollSkill(skillId);
   }
 }

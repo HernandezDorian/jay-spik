@@ -1,0 +1,62 @@
+{{!-- Skills Tab --}}
+<div class="tab skills" data-group="primary" data-tab="skills">
+  <header class="skills-header">
+    <h3>Compétences</h3>
+    <button type="button" class="add-skill" title="Ajouter une compétence">
+      <i class="fas fa-plus"></i> Ajouter une compétence
+    </button>
+  </header>
+
+  {{#if system.skills}}
+    {{#if system.skills.length}}
+      <ol class="skills-list">
+        {{#each system.skills as |skill|}}
+          <li class="skill-item" data-skill-id="{{skill.id}}">
+            <div class="skill-header">
+              <input class="skill-name" type="text" name="system.skills.{{@index}}.name" value="{{skill.name}}" placeholder="Nom de la compétence" />
+              <div class="skill-controls">
+                <button type="button" class="skill-roll rollable" data-skill-id="{{skill.id}}" title="Faire un jet de compétence">
+                  <i class="fas fa-dice-d20"></i>
+                </button>
+                <button type="button" class="skill-delete" data-skill-id="{{skill.id}}" title="Supprimer cette compétence">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="skill-details">
+              <div class="skill-stat">
+                <label>Statistique de base:</label>
+                <select name="system.skills.{{@index}}.baseStat" data-dtype="String">
+                  <option value="mental" {{#if (eq "mental" skill.baseStat)}}selected{{/if}}>Mental</option>
+                  <option value="physique" {{#if (eq "physique" skill.baseStat)}}selected{{/if}}>Physique</option>
+                  <option value="social" {{#if (eq "social" skill.baseStat)}}selected{{/if}}>Social</option>
+                </select>
+              </div>
+
+              <div class="skill-bonus">
+                <label>Bonus/Malus:</label>
+                <input type="number" name="system.skills.{{@index}}.bonus" value="{{skill.bonus}}" data-dtype="Number" min="-100" max="100" />
+              </div>
+
+              <div class="skill-description">
+                <label>Description:</label>
+                <input type="text" name="system.skills.{{@index}}.description" value="{{skill.description}}" placeholder="Description de la compétence (optionnel)" />
+              </div>
+            </div>
+          </li>
+        {{/each}}
+      </ol>
+    {{else}}
+      <div class="no-skills">
+        <p>Aucune compétence créée.</p>
+        <p><em>Cliquez sur "Ajouter une compétence" pour commencer.</em></p>
+      </div>
+    {{/if}}
+  {{else}}
+    <div class="no-skills">
+      <p>Aucune compétence créée.</p>
+      <p><em>Cliquez sur "Ajouter une compétence" pour commencer.</em></p>
+    </div>
+  {{/if}}
+</div>

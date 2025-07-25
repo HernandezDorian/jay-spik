@@ -541,10 +541,10 @@
 
 /* Armor Piercing indicator */
 .armor-piercing-indicator {
-  color: #ff5722;
+  color: #a5b100;
   font-weight: bold;
   margin-left: 5px;
-  text-shadow: 0 0 3px rgba(255, 87, 34, 0.5);
+  text-shadow: 0 0 3px #a5b1008f;
 }
 
 .item-roll-damage .armor-piercing-indicator {
@@ -615,88 +615,247 @@
   padding-bottom: 5px;
 }
 
-.target-result {
-  margin: 5px 0;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  background: #f9f9f9;
-  font-size: 13px;
-}
-
-.target-result strong {
-  color: #1976d2;
-  font-size: 14px;
-}
-
-/* -------------------------------------------- */
-/*  Chat Messages Styles                        */
-/* -------------------------------------------- */
-
-.damage-application {
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  padding: 10px;
-  margin: 5px 0;
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.damage-application h3 {
-  margin-top: 0;
-  color: #8b4513;
-  border-bottom: 1px solid #ccc;
-  padding-bottom: 5px;
-}
-
-.targets-preview {
-  margin: 10px 0;
-}
-
-.target-damage {
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 3px;
-  font-size: 0.9em;
-}
-
-.damage-buttons {
-  text-align: center;
-}
-
-.apply-damage {
-  background: linear-gradient(135deg, #dc2626, #b91c1c);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.2s ease;
-}
-
-.apply-damage:hover {
-  background: linear-gradient(135deg, #b91c1c, #991b1b);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.apply-damage:disabled {
-  background: #9ca3af !important;
-  cursor: not-allowed !important;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-.damage-results {
-  border: 1px solid #059669;
-  border-radius: 5px;
-  padding: 10px;
-  margin: 5px 0;
-  background: rgba(5, 150, 105, 0.1);
-}
-
 .damage-results h4 {
   margin-top: 0;
   color: #059669;
   border-bottom: 1px solid #059669;
   padding-bottom: 5px;
+}
+
+/* ========================================= */
+/* STYLES POUR L'ONGLET COMPÉTENCES         */
+/* ========================================= */
+
+.tab.skills {
+  padding: 10px;
+}
+
+.skills-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ccc;
+}
+
+.skills-header h3 {
+  margin: 0;
+  font-size: 1.2em;
+  color: #333;
+}
+
+.add-skill {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.2s;
+}
+
+.add-skill:hover {
+  background: #218838;
+}
+
+.skills-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.skill-item {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  padding: 12px;
+  background: #f9f9f9;
+  transition: box-shadow 0.2s;
+}
+
+.skill-item:hover {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.skill-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.skill-name {
+  font-weight: bold;
+  font-size: 1.1em;
+  border: 1px solid #ccc;
+  padding: 6px;
+  border-radius: 4px;
+  flex: 1;
+  margin-right: 10px;
+}
+
+input[name="system.health.value"] {
+  background-color: rgba(255, 193, 7, 0.1);
+  border-color: #ffc107;
+}
+
+input[name="system.power.value"] {
+  background-color: rgba(255, 193, 7, 0.1);
+  border-color: #ffc107;
+}
+
+.skill-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.skill-roll {
+  background: #007bff;
+  color: rgb(0, 0, 0);
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.skill-roll:hover {
+  background: #0056b3;
+}
+
+.skill-delete {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.skill-delete:hover {
+  background: #c82333;
+}
+
+.skill-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.skill-description {
+  grid-column: 1 / -1;
+}
+
+.skill-summary {
+  grid-column: 1 / -1;
+  background: #e9ecef;
+  padding: 8px;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.skill-calculation {
+  font-size: 0.9em;
+  color: #495057;
+}
+
+.skill-stat label,
+.skill-bonus label,
+.skill-description label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #555;
+}
+
+.skill-stat select,
+.skill-bonus input,
+.skill-description input {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.no-skills {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.no-skills p {
+  margin: 10px 0;
+}
+
+.no-skills em {
+  font-style: italic;
+  color: #999;
+}
+
+/* Responsive pour petits écrans */
+@media (max-width: 600px) {
+  .skill-details {
+    grid-template-columns: 1fr;
+  }
+
+  .skill-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .skill-controls {
+    justify-content: center;
+  }
+}
+
+/* ========================================= */
+/* STYLES POUR LES JETS DE COMPÉTENCE CHAT  */
+/* ========================================= */
+
+.skill-roll {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px;
+  margin: 5px 0;
+  background: #f8f9fa;
+}
+
+.skill-roll h3 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 1.1em;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 5px;
+}
+
+.skill-roll .roll-details p {
+  margin: 5px 0;
+  font-size: 0.9em;
+}
+
+.skill-roll .result {
+  font-size: 1.1em;
+  font-weight: bold;
+  padding: 5px;
+  border-radius: 4px;
+  text-align: center;
+  margin: 10px 0;
+}
+
+.skill-roll .result.success {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+  border: 1px solid #28a745;
+}
+
+.skill-roll .result.failure {
+  background: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+  border: 1px solid #dc3545;
 }

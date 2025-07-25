@@ -19,9 +19,9 @@ export default class JaySpikCharacter extends JaySpikActorBase {
       abilitiesSchema[key] = new fields.SchemaField({
         value: new fields.NumberField({
           ...requiredInteger,
-          initial: config.initial || 50,
-          min: config.min || 0,
-          max: config.max || 100,
+          initial: config.defaultValue || 50,
+          min: config.minValue || 0,
+          max: config.maxValue || 100,
         }),
       });
     }
@@ -35,6 +35,29 @@ export default class JaySpikCharacter extends JaySpikActorBase {
         min: 0,
       }),
     });
+
+    // Système de compétences
+    schema.skills = new fields.ArrayField(
+      new fields.SchemaField({
+        id: new fields.StringField({
+          required: true,
+          initial: () => foundry.utils.randomID(),
+        }),
+        name: new fields.StringField({ required: true, initial: "" }),
+        baseStat: new fields.StringField({
+          required: true,
+          initial: "physique",
+        }),
+        bonus: new fields.NumberField({
+          required: true,
+          nullable: false,
+          integer: true,
+          initial: 0,
+        }),
+        description: new fields.StringField({ required: false, initial: "" }),
+      }),
+      { initial: [] }
+    );
 
     return schema;
   }
@@ -256,6 +279,225 @@ export default class JaySpikCharacter extends JaySpikActorBase {
       finalDamage: finalDamage,
       blocked: damage - finalDamage,
       armorPiercing: armorPiercing,
+    };
+  }
+
+  /**
+   * Effectue un jet de compétence
+   * @param {string} skillId - ID de la compétence
+   * @param {object} options - Options pour le roll
+   */
+  async rollSkill(skillId, options = {}) {
+    const skill = this.skills.find((s) => s.id === skillId);
+    if (!skill) {
+      ui.notifications.error(`Compétence non trouvée: ${skillId}`);
+      return;
+    }
+
+    // Récupérer la valeur de la statistique de base
+    const baseStat = this.abilities[skill.baseStat];
+    if (!baseStat) {
+      ui.notifications.error(`Statistique non trouvée: ${skill.baseStat}`);
+      return;
+    }
+
+    // Calculer la valeur finale avec le bonus de la compétence
+    const finalValue = baseStat.value + skill.bonus;
+
+    // Créer la formule de roll (d100 <= valeur finale)
+    const rollFormula = "1d100";
+    const roll = await new Roll(rollFormula).evaluate();
+
+    const success = roll.total <= finalValue;
+    const criticalSuccess = roll.total <= 5;
+    const criticalFailure = roll.total >= 96;
+
+    // Déterminer le niveau de succès
+    let successLevel = "failure";
+    let successText = "Échec";
+
+    if (criticalFailure) {
+      successLevel = "critical-failure";
+      successText = "Échec Critique";
+    } else if (criticalSuccess) {
+      successLevel = "critical-success";
+      successText = "Succès Critique";
+    } else if (success) {
+      successLevel = "success";
+      successText = "Succès";
+    }
+
+    // Créer le message de chat
+    const flavor = `
+      <div class="skill-roll">
+        <h3><strong>${skill.name}</strong></h3>
+        <div class="skill-details">
+          <p><strong>Statistique:</strong> ${
+            STATS_CONFIG[skill.baseStat]?.label || skill.baseStat
+          } (${baseStat.value})</p>
+          ${
+            skill.bonus !== 0
+              ? `<p><strong>Bonus:</strong> ${skill.bonus > 0 ? "+" : ""}${
+                  skill.bonus
+                }</p>`
+              : ""
+          }
+          <p><strong>Seuil de réussite:</strong> ${finalValue}</p>
+          ${skill.description ? `<p><em>${skill.description}</em></p>` : ""}
+        </div>
+        <div class="roll-result ${successLevel}">
+          <strong>${successText}</strong> (${roll.total} ≤ ${finalValue})
+        </div>
+      </div>
+    `;
+
+    // Envoyer le message au chat
+    await roll.toMessage({
+      speaker: ChatMessage.getSpeaker({ actor: this.parent }),
+      flavor: flavor,
+      rollMode: options.rollMode || game.settings.get("core", "rollMode"),
+    });
+
+    return {
+      roll: roll,
+      success: success,
+      criticalSuccess: criticalSuccess,
+      criticalFailure: criticalFailure,
+      finalValue: finalValue,
+      skill: skill,
+    };
+  }
+
+  /**
+   * Ajoute une nouvelle compétence
+   * @param {object} skillData - Données de la compétence
+   */
+  async addSkill(skillData) {
+    const newSkill = {
+      id: foundry.utils.randomID(),
+      name: skillData.name || "Nouvelle Compétence",
+      baseStat: skillData.baseStat || "physique",
+      bonus: skillData.bonus || 0,
+      description: skillData.description || "",
+    };
+
+    const currentSkills = [...this.skills];
+    currentSkills.push(newSkill);
+
+    await this.parent.update({
+      "system.skills": currentSkills,
+    });
+
+    return newSkill;
+  }
+
+  /**
+   * Supprime une compétence
+   * @param {string} skillId - ID de la compétence à supprimer
+   */
+  async removeSkill(skillId) {
+    const currentSkills = this.skills.filter((s) => s.id !== skillId);
+
+    await this.parent.update({
+      "system.skills": currentSkills,
+    });
+  }
+
+  /**
+   * Met à jour une compétence
+   * @param {string} skillId - ID de la compétence
+   * @param {object} updateData - Données à mettre à jour
+   */
+  async updateSkill(skillId, updateData) {
+    const currentSkills = [...this.skills];
+    const skillIndex = currentSkills.findIndex((s) => s.id === skillId);
+
+    if (skillIndex === -1) {
+      ui.notifications.error(`Compétence non trouvée: ${skillId}`);
+      return;
+    }
+
+    currentSkills[skillIndex] = {
+      ...currentSkills[skillIndex],
+      ...updateData,
+    };
+
+    await this.parent.update({
+      "system.skills": currentSkills,
+    });
+  }
+
+  /**
+   * Lance un jet de compétence
+   * @param {string} skillId - ID de la compétence
+   */
+  async rollSkill(skillId) {
+    const skill = this.skills.find((s) => s.id === skillId);
+
+    if (!skill) {
+      ui.notifications.error(`Compétence non trouvée: ${skillId}`);
+      return;
+    }
+
+    // Récupérer la valeur de la stat de base
+    const baseStat = skill.baseStat || "physique";
+    const baseValue = this.abilities?.[baseStat]?.value || 50;
+
+    // Calculer le seuil de réussite (stat de base + bonus)
+    const threshold = baseValue + (skill.bonus || 0);
+
+    // Effectuer le jet de dé
+    const roll = new Roll("1d100");
+    await roll.evaluate();
+
+    // Déterminer le résultat
+    const isSuccess = roll.total <= threshold;
+    const margin = threshold - roll.total;
+
+    // Préparer le message de chat
+    const messageData = {
+      speaker: ChatMessage.getSpeaker({ actor: this.parent }),
+      flavor: `Jet de compétence: ${skill.name}`,
+      content: `
+        <div class="skill-roll">
+          <h3>${skill.name}</h3>
+          <div class="roll-details">
+            <p><strong>Statistique de base:</strong> ${
+              CONFIG.JAY_SPIK.abilities[baseStat]
+            } (${baseValue})</p>
+            ${
+              skill.bonus !== 0
+                ? `<p><strong>Bonus/Malus:</strong> ${
+                    skill.bonus >= 0 ? "+" : ""
+                  }${skill.bonus}</p>`
+                : ""
+            }
+            <p><strong>Seuil de réussite:</strong> ${threshold}</p>
+            <p><strong>Résultat du dé:</strong> ${roll.total}</p>
+            <p class="result ${isSuccess ? "success" : "failure"}">
+              <strong>${isSuccess ? "RÉUSSITE" : "ÉCHEC"}</strong>
+              ${
+                isSuccess
+                  ? `(marge: ${margin})`
+                  : `(échec de ${Math.abs(margin)})`
+              }
+            </p>
+            ${skill.description ? `<p><em>${skill.description}</em></p>` : ""}
+          </div>
+        </div>
+      `,
+      rolls: [roll],
+    };
+
+    // Envoyer le message
+    await ChatMessage.create(messageData);
+
+    return {
+      skill,
+      roll,
+      threshold,
+      isSuccess,
+      margin,
     };
   }
 }
