@@ -164,10 +164,20 @@ Hooks.once("ready", function () {
   // });
 
   // Hook pour mettre à jour les statuts quand l'acteur change
-  Hooks.on("updateActor", (actor, changes) => {
+  Hooks.on("updateActor", (actor, changes, options, userId) => {
     if (changes.system?.status !== undefined) {
-      // Mettre à jour les Active Effects pour afficher sur les tokens
-      updateStatusActiveEffect(actor, changes.system.status);
+      console.log(
+        `JaySpik: Hook updateActor - ${actor.name} -> statut: ${changes.system.status} (user: ${userId})`
+      );
+
+      // Vérifier si c'est nous qui avons initié le changement pour éviter les boucles
+      if (options?.jaySpikStatusUpdate) {
+        console.log("JaySpik: Changement initié par nous-mêmes, ignoré");
+        return;
+      }
+
+      // Ajouter à la queue avec un délai pour éviter les appels multiples rapides
+      queueStatusUpdate(actor, changes.system.status);
     }
   });
 
@@ -176,9 +186,9 @@ Hooks.once("ready", function () {
     // Vérifier si l'acteur du token a un statut actif
     const actor = token.actor;
     if (actor?.system?.status && actor.system.status !== "none") {
-      // Forcer la mise à jour des effets actifs
+      // Forcer la mise à jour des effets actifs via la queue
       setTimeout(() => {
-        updateStatusActiveEffect(actor, actor.system.status);
+        queueStatusUpdate(actor, actor.system.status);
       }, 100);
     }
   });
@@ -200,8 +210,8 @@ Hooks.once("ready", function () {
   // Initialiser les effets actifs des acteurs existants au démarrage
   game.actors.forEach((actor) => {
     if (actor.system?.status && actor.system.status !== "none") {
-      // Appliquer l'effet actif sur l'acteur
-      updateStatusActiveEffect(actor, actor.system.status);
+      // Ajouter à la queue pour traitement séquentiel
+      queueStatusUpdate(actor, actor.system.status);
     }
   });
 
@@ -630,214 +640,245 @@ window.testApplyDamage = async function (actorId, damage) {
 /*  Active Effects Status Management           */
 /* -------------------------------------------- */
 
-// Map pour éviter les appels concurrents de mise à jour des statuts
-const statusUpdateLocks = new Map();
+// Queue pour les mises à jour de statuts (évite les doublons et conditions de course)
+const statusUpdateQueue = new Map();
+let queueProcessing = false;
 
 /**
- * Met à jour l'Active Effect de statut d'un acteur (comme les Temporary Effects)
+ * Ajoute une mise à jour de statut à la queue pour traitement séquentiel
  * @param {Actor} actor - L'acteur
- * @param {string} newStatus - Le nouveau statut ("none" pour supprimer)
+ * @param {string} newStatus - Le nouveau statut
  */
-async function updateStatusActiveEffect(actor, newStatus) {
+function queueStatusUpdate(actor, newStatus) {
   const actorId = actor.id;
-  const lockKey = `${actorId}_${newStatus}`;
 
-  // Vérifier si une mise à jour identique est déjà en cours
-  if (statusUpdateLocks.get(lockKey)) {
-    console.log(
-      `JaySpik: Mise à jour '${newStatus}' déjà en cours pour ${actor.name}, ignorée`
-    );
+  // Remplacer toute mise à jour en attente pour cet acteur (dernière valeur gagne)
+  statusUpdateQueue.set(actorId, { actor, newStatus, timestamp: Date.now() });
+
+  console.log(
+    `JaySpik: Statut '${newStatus}' ajouté à la queue pour ${actor.name}`
+  );
+
+  // Traiter la queue avec un petit délai pour regrouper les changements rapides
+  setTimeout(processStatusUpdateQueue, 50);
+}
+
+/**
+ * Traite la queue des mises à jour de statuts de manière séquentielle
+ */
+async function processStatusUpdateQueue() {
+  if (queueProcessing || statusUpdateQueue.size === 0) {
     return;
   }
 
-  // Verrouiller cette combinaison acteur/statut spécifique
-  statusUpdateLocks.set(lockKey, true);
-  statusUpdateLocks.set(actorId, true); // Verrou général aussi
+  queueProcessing = true;
+  console.log(
+    `JaySpik: Traitement de ${statusUpdateQueue.size} mise(s) à jour de statut`
+  );
 
   try {
-    console.log(
-      `JaySpik: Début mise à jour statut '${newStatus}' pour ${actor.name}`
-    );
+    // Traiter chaque mise à jour dans l'ordre d'arrivée
+    for (const [actorId, updateData] of statusUpdateQueue.entries()) {
+      try {
+        await updateStatusActiveEffectSafe(
+          updateData.actor,
+          updateData.newStatus
+        );
+        statusUpdateQueue.delete(actorId);
 
-    // Supprimer TOUS les anciens effets de statut
-    await removeExistingStatusEffectSafely(actor);
-
-    // Attendre plus longtemps pour que FoundryVTT termine complètement ses opérations
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    // Si le nouveau statut n'est pas "none", créer un nouvel Active Effect
-    if (newStatus && newStatus !== "none") {
-      // Double vérification : s'assurer qu'aucun effet identique n'existe déjà
-      await ensureNoExistingEffect(actor, newStatus);
-      await createStatusActiveEffect(actor, newStatus);
+        // Petit délai entre chaque traitement pour éviter la surcharge
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      } catch (error) {
+        console.error(
+          `JaySpik: Erreur lors de la mise à jour du statut pour ${updateData.actor.name}:`,
+          error
+        );
+        statusUpdateQueue.delete(actorId); // Supprimer même en cas d'erreur
+      }
     }
-
-    console.log(
-      `JaySpik: Fin mise à jour statut '${newStatus}' pour ${actor.name}`
-    );
   } finally {
-    // Libérer les verrous après un délai plus long
-    setTimeout(() => {
-      statusUpdateLocks.delete(lockKey);
-      statusUpdateLocks.delete(actorId);
-    }, 300);
-  }
-}
+    queueProcessing = false;
 
-/**
- * S'assure qu'aucun effet de statut identique n'existe avant création
- * @param {Actor} actor - L'acteur
- * @param {string} statusKey - La clé du statut à vérifier
- */
-async function ensureNoExistingEffect(actor, statusKey) {
-  const statusConfig = CONFIG.JAY_SPIK?.statuses?.[statusKey];
-  if (!statusConfig) return;
-
-  // Vérifier s'il existe déjà un effet avec ce statut
-  const existingEffect = actor.effects.find((effect) => {
-    try {
-      return (
-        effect.flags?.jaySpik?.statusKey === statusKey ||
-        (Array.isArray(effect.statuses) &&
-          effect.statuses.includes(`jayspik-${statusKey}`)) ||
-        effect.name === statusConfig.label
-      );
-    } catch (e) {
-      console.warn("JaySpik: Erreur lors de la vérification d'effet:", e);
-      return false;
+    // Si de nouvelles entrées ont été ajoutées pendant le traitement, les traiter
+    if (statusUpdateQueue.size > 0) {
+      setTimeout(processStatusUpdateQueue, 100);
     }
-  });
-
-  if (existingEffect) {
-    console.log(
-      `JaySpik: Effet '${statusKey}' déjà présent, suppression préventive`
-    );
-    await removeEffectSilently(actor, existingEffect.id);
-
-    // Attendre un peu après la suppression préventive
-    await new Promise((resolve) => setTimeout(resolve, 50));
   }
 }
 
 /**
- * Version ultra-sécurisée de suppression des effets de statut
- * Ignore complètement toutes les erreurs de FoundryVTT
+ * Version sécurisée de updateStatusActiveEffect avec protection contre les doublons
  * @param {Actor} actor - L'acteur
+ * @param {string} newStatus - Le nouveau statut ("none" pour supprimer)
  */
-async function removeExistingStatusEffectSafely(actor) {
-  try {
-    // Obtenir une copie des effets à un moment donné pour éviter les modifications concurrentes
-    const allEffects = Array.from(actor.effects.values());
+async function updateStatusActiveEffectSafe(actor, newStatus) {
+  console.log(
+    `JaySpik: [SAFE] Début mise à jour statut '${newStatus}' pour ${actor.name}`
+  );
 
-    // Trouver TOUS les effets de posture/statut JaySpik
-    const existingEffects = allEffects.filter((effect) => {
+  try {
+    // ÉTAPE 1: Nettoyer TOUS les anciens effets de statut
+    await removeAllStatusEffectsCompletely(actor);
+
+    // ÉTAPE 2: Attendre que la suppression soit complètement terminée
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    // ÉTAPE 3: Vérification finale qu'aucun effet de statut n'existe
+    const remainingEffects = actor.effects.filter((effect) => {
       try {
         return (
           effect.flags?.jaySpik?.isStatusEffect ||
           (Array.isArray(effect.statuses) &&
-            effect.statuses.some((s) => s.startsWith("jayspik-"))) ||
-          (effect.name &&
-            (effect.name.includes("Défensive") ||
-              effect.name.includes("Offensive") ||
-              effect.name.includes("Concentré") ||
-              effect.name.includes("Furtif") ||
-              effect.name.includes("Berserk")))
+            effect.statuses.some((s) => s.startsWith("jayspik-")))
         );
       } catch (e) {
         return false;
       }
     });
 
-    if (existingEffects.length > 0) {
-      console.log(
-        `JaySpik: Tentative de suppression de ${existingEffects.length} effet(s) de posture`
+    if (remainingEffects.length > 0) {
+      console.warn(
+        `JaySpik: ${remainingEffects.length} effet(s) de statut persistant(s), suppression forcée`
       );
-
-      // Supprimer silencieusement chaque effet
-      for (const effect of existingEffects) {
-        await removeEffectSilently(actor, effect.id);
+      for (const effect of remainingEffects) {
+        await forceRemoveEffect(actor, effect.id);
       }
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
+
+    // ÉTAPE 4: Créer le nouvel effet si nécessaire
+    if (newStatus && newStatus !== "none") {
+      await createStatusActiveEffectSafe(actor, newStatus);
+    }
+
+    console.log(
+      `JaySpik: [SAFE] Fin mise à jour statut '${newStatus}' pour ${actor.name}`
+    );
   } catch (error) {
-    // Ignorer toutes les erreurs de cette fonction
-    console.log("JaySpik: Suppression silencieuse des effets terminée");
+    console.error(`JaySpik: Erreur dans updateStatusActiveEffectSafe:`, error);
   }
 }
 
 /**
- * Supprime un effet de manière silencieuse, en ignorant toutes les erreurs
+ * Supprime complètement tous les effets de statut d'un acteur
  * @param {Actor} actor - L'acteur
- * @param {string} effectId - L'ID de l'effet
  */
-async function removeEffectSilently(actor, effectId) {
-  try {
-    // Triple vérification avec différentes méthodes
-    const effect1 = actor.effects.get(effectId);
-    const effect2 = actor.effects.find((e) => e.id === effectId);
-    const effect3 = game.actors.get(actor.id)?.effects?.get(effectId);
+async function removeAllStatusEffectsCompletely(actor) {
+  console.log(
+    `JaySpik: Suppression complète des effets de statut pour ${actor.name}`
+  );
 
-    if (effect1 || effect2 || effect3) {
-      await actor.deleteEmbeddedDocuments("ActiveEffect", [effectId]);
-    }
-  } catch (error) {
-    // Ignore toutes les erreurs - nous nous fichons des "does not exist"
-    // L'objectif est juste que l'effet ne soit plus là à la fin
-  }
-}
-
-/**
- * Crée un Temporary Effect de statut (s'affiche sur les tokens)
- * @param {Actor} actor - L'acteur
- * @param {string} statusKey - La clé du statut
- */
-async function createStatusActiveEffect(actor, statusKey) {
-  const statusConfig = CONFIG.JAY_SPIK?.statuses?.[statusKey];
-  if (!statusConfig) return;
-
-  // DERNIÈRE VÉRIFICATION : s'assurer qu'aucun effet identique n'existe
-  const finalCheck = actor.effects.find((effect) => {
+  // Obtenir une liste fraîche des effets
+  const statusEffects = actor.effects.filter((effect) => {
     try {
       return (
-        effect.flags?.jaySpik?.statusKey === statusKey ||
+        effect.flags?.jaySpik?.isStatusEffect ||
         (Array.isArray(effect.statuses) &&
-          effect.statuses.includes(`jayspik-${statusKey}`)) ||
-        effect.name === statusConfig.label
+          effect.statuses.some((s) => s.startsWith("jayspik-"))) ||
+        (effect.name &&
+          (effect.name.includes("Défensive") ||
+            effect.name.includes("Offensive") ||
+            effect.name.includes("Concentré") ||
+            effect.name.includes("Furtif") ||
+            effect.name.includes("Berserk")))
       );
     } catch (e) {
-      console.warn(
-        "JaySpik: Erreur lors de la vérification finale d'effet:",
-        e
-      );
       return false;
     }
   });
 
-  if (finalCheck) {
-    console.log(
-      `JaySpik: Création annulée - effet '${statusKey}' déjà présent (vérification finale)`
+  if (statusEffects.length === 0) {
+    console.log("JaySpik: Aucun effet de statut à supprimer");
+    return;
+  }
+
+  console.log(
+    `JaySpik: Suppression de ${statusEffects.length} effet(s) de statut`
+  );
+
+  // Supprimer chaque effet individuellement
+  for (const effect of statusEffects) {
+    await forceRemoveEffect(actor, effect.id);
+  }
+}
+
+/**
+ * Force la suppression d'un effet en ignorant toutes les erreurs
+ * @param {Actor} actor - L'acteur
+ * @param {string} effectId - L'ID de l'effet
+ */
+async function forceRemoveEffect(actor, effectId) {
+  try {
+    // Vérifier que l'effet existe encore
+    if (actor.effects.get(effectId)) {
+      await actor.deleteEmbeddedDocuments("ActiveEffect", [effectId]);
+      console.log(`JaySpik: Effet ${effectId} supprimé`);
+    } else {
+      console.log(`JaySpik: Effet ${effectId} déjà supprimé`);
+    }
+  } catch (error) {
+    // Ignorer toutes les erreurs de suppression
+    console.log(`JaySpik: Suppression silencieuse de l'effet ${effectId}`);
+  }
+}
+
+/**
+ * Version sécurisée de la création d'effet de statut
+ * @param {Actor} actor - L'acteur
+ * @param {string} statusKey - La clé du statut
+ */
+async function createStatusActiveEffectSafe(actor, statusKey) {
+  const statusConfig = CONFIG.JAY_SPIK?.statuses?.[statusKey];
+  if (!statusConfig) {
+    console.warn(
+      `JaySpik: Configuration manquante pour le statut '${statusKey}'`
     );
     return;
   }
 
-  console.log(`JaySpik: Création de l'effet '${statusKey}' pour ${actor.name}`);
+  // VÉRIFICATION FINALE : aucun effet de statut ne doit exister
+  const existingStatusEffects = actor.effects.filter((effect) => {
+    try {
+      return (
+        effect.flags?.jaySpik?.isStatusEffect ||
+        (Array.isArray(effect.statuses) &&
+          effect.statuses.some((s) => s.startsWith("jayspik-")))
+      );
+    } catch (e) {
+      return false;
+    }
+  });
 
-  // Créer un Temporary Effect (pas un Active Effect passif)
+  if (existingStatusEffects.length > 0) {
+    console.error(
+      `JaySpik: ALERTE - ${existingStatusEffects.length} effet(s) de statut détecté(s) avant création!`
+    );
+    console.error(
+      "JaySpik: Annulation de la création pour éviter les doublons"
+    );
+    return;
+  }
+
+  console.log(
+    `JaySpik: Création sécurisée de l'effet '${statusKey}' pour ${actor.name}`
+  );
+
   const effectData = {
     name: statusConfig.label,
     icon: convertFontAwesomeToPath(statusConfig.icon),
-    description: statusConfig.description, // Description visible pour les joueurs
+    description: statusConfig.description,
     changes: [], // Pas de changement de stats - effet purement visuel
     flags: {
       jaySpik: {
         isStatusEffect: true,
         statusKey: statusKey,
+        createdAt: Date.now(), // Timestamp pour debugging
       },
       core: {
         statusId: `jayspik-${statusKey}`,
       },
     },
     duration: {
-      // Propriétés pour un Temporary Effect
       rounds: undefined,
       seconds: undefined,
       startRound: undefined,
@@ -845,7 +886,7 @@ async function createStatusActiveEffect(actor, statusKey) {
     },
     disabled: false,
     transfer: true, // CRUCIAL : permet l'affichage sur les tokens
-    origin: actor.uuid, // Important pour les Temporary Effects
+    origin: actor.uuid,
     statuses: [`jayspik-${statusKey}`], // Status ID pour l'affichage sur token
   };
 
@@ -854,6 +895,27 @@ async function createStatusActiveEffect(actor, statusKey) {
     console.log(
       `JaySpik: Effet '${statusKey}' créé avec succès pour ${actor.name}`
     );
+
+    // Vérification post-création
+    setTimeout(() => {
+      const postCreateCount = actor.effects.filter((effect) => {
+        try {
+          return (
+            effect.flags?.jaySpik?.isStatusEffect ||
+            (Array.isArray(effect.statuses) &&
+              effect.statuses.some((s) => s.startsWith("jayspik-")))
+          );
+        } catch (e) {
+          return false;
+        }
+      }).length;
+
+      if (postCreateCount > 1) {
+        console.error(
+          `JaySpik: ALERTE POST-CRÉATION - ${postCreateCount} effets de statut détectés!`
+        );
+      }
+    }, 100);
   } catch (error) {
     console.error(
       `JaySpik: Erreur lors de la création de l'effet '${statusKey}':`,
