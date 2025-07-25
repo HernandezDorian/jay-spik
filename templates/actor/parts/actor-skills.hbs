@@ -27,7 +27,7 @@
             <div class="skill-details">
               <div class="skill-stat">
                 <label>Statistique de base:</label>
-                <select name="system.skills.{{@index}}.baseStat" data-dtype="String">
+                <select class="selectCompStat" name="system.skills.{{@index}}.baseStat" data-dtype="String">
                   <option value="mental" {{#if (eq "mental" skill.baseStat)}}selected{{/if}}>Mental</option>
                   <option value="physique" {{#if (eq "physique" skill.baseStat)}}selected{{/if}}>Physique</option>
                   <option value="social" {{#if (eq "social" skill.baseStat)}}selected{{/if}}>Social</option>
