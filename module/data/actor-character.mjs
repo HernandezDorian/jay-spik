@@ -59,30 +59,6 @@ export default class JaySpikCharacter extends JaySpikActorBase {
       { initial: [] }
     );
 
-    // Système de statuts
-    schema.status = new fields.StringField({
-      required: false,
-      initial: "none", // Aucun statut par défaut
-      choices: () => {
-        // Génération dynamique des choix basée sur la configuration
-        const choices = { none: "Aucun" }; // Option pour aucun statut
-
-        // Import dynamique pour éviter les dépendances circulaires
-        if (typeof CONFIG !== "undefined" && CONFIG.JAY_SPIK?.statuses) {
-          for (const [key, config] of Object.entries(
-            CONFIG.JAY_SPIK.statuses
-          )) {
-            if (key !== "none") {
-              // Éviter de dupliquer l'option "none"
-              choices[key] = config.label;
-            }
-          }
-        }
-
-        return choices;
-      },
-    });
-
     return schema;
   }
 
@@ -113,7 +89,7 @@ export default class JaySpikCharacter extends JaySpikActorBase {
   }
 
   /**
-   * Calcule la valeur modifiée d'une statistique en appliquant tous les bonus des items et statuts
+   * Calcule la valeur modifiée d'une statistique en appliquant tous les bonus des items
    * @param {string} stat - Le nom de la statistique (mental, physique, social, etc.)
    * @param {number} baseValue - La valeur de base de la statistique
    * @returns {number} La valeur modifiée après application des bonus
@@ -156,9 +132,6 @@ export default class JaySpikCharacter extends JaySpikActorBase {
         }
       }
     }
-
-    // Note : Les bonus de statuts ne sont plus appliqués ici
-    // Les statuts sont maintenant purement visuels (icônes sur tokens)
 
     // S'assurer que la valeur reste dans les limites (0-100 pour ce système)
     return Math.max(0, Math.min(100, Math.round(modifiedValue)));

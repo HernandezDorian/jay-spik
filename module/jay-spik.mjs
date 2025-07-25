@@ -12,36 +12,6 @@ import { DamageManager } from "./helpers/damage-manager.mjs";
 import * as models from "./data/_module.mjs";
 
 /* -------------------------------------------- */
-/*  Utility Functions                           */
-/* -------------------------------------------- */
-
-/**
- * Convertit une icône FontAwesome en chemin d'image utilisable par FoundryVTT
- * @param {string} fontAwesomeClass - Classe FontAwesome (ex: "fas fa-shield-alt")
- * @returns {string} Chemin vers l'icône ou icône par défaut
- */
-function convertFontAwesomeToPath(fontAwesomeClass) {
-  // Mapping des icônes FontAwesome vers des icônes SVG natives de FoundryVTT
-  const iconMapping = {
-    "fas fa-shield-alt": "icons/svg/shield.svg",
-    "fas fa-sword": "icons/svg/sword.svg",
-    "fas fa-brain": "icons/svg/eye.svg",
-    "fas fa-user-ninja": "icons/svg/mystery-man.svg",
-    "fas fa-fire": "icons/svg/fire.svg",
-    "fas fa-bolt": "icons/svg/lightning.svg",
-    "fas fa-leaf": "icons/svg/oak.svg",
-    "fas fa-snowflake": "icons/svg/ice-aura.svg",
-    "fas fa-heart": "icons/svg/heal.svg",
-    "fas fa-skull": "icons/svg/poison.svg",
-    "fas fa-fist-raised": "icons/svg/combat.svg",
-    "fas fa-running": "icons/svg/wing.svg",
-  };
-
-  const iconPath = iconMapping[fontAwesomeClass];
-  return iconPath || "icons/svg/aura.svg";
-}
-
-/* -------------------------------------------- */
 /*  Init Hook                                   */
 /* -------------------------------------------- */
 
@@ -90,21 +60,6 @@ Hooks.once("init", function () {
   // if the transfer property on the Active Effect is true.
   CONFIG.ActiveEffect.legacyTransferral = false;
 
-  // Enregistrer les status effects personnalisés pour JaySpik
-  CONFIG.statusEffects = CONFIG.statusEffects || [];
-
-  // Ajouter nos status effects personnalisés (exclure "none")
-  Object.entries(JAY_SPIK.statuses || {}).forEach(([key, config]) => {
-    if (key !== "none" && config.icon) {
-      CONFIG.statusEffects.push({
-        id: `jayspik-${key}`,
-        name: config.label,
-        icon: convertFontAwesomeToPath(config.icon),
-        description: config.description,
-      });
-    }
-  });
-
   // Register sheet application classes
   Actors.unregisterSheet("core", ActorSheet);
   Actors.registerSheet("jay-spik", JaySpikActorSheet, {
@@ -151,32 +106,6 @@ Hooks.once("ready", function () {
   // Wait to register hotbar drop hook on ready so that modules could register earlier if they want to
   Hooks.on("hotbarDrop", (bar, data, slot) => createItemMacro(data, slot));
 
-  // Hook pour afficher les icônes de statut sur les tokens
-  // Note: Désactivé car nous utilisons maintenant les effets natifs de FoundryVTT
-  // Hooks.on("refreshToken", (token) => {
-  //   updateTokenStatusDisplay(token);
-  // });
-
-  // Hook pour mettre à jour les statuts quand l'acteur change
-  Hooks.on("updateActor", (actor, changes) => {
-    if (changes.system?.status !== undefined) {
-      // Mettre à jour les Active Effects pour afficher sur les tokens
-      updateStatusActiveEffect(actor, changes.system.status);
-    }
-  });
-
-  // Hook pour s'assurer que les tokens affichent bien les effets actifs
-  Hooks.on("createToken", (token) => {
-    // Vérifier si l'acteur du token a un statut actif
-    const actor = token.actor;
-    if (actor?.system?.status && actor.system.status !== "none") {
-      // Forcer la mise à jour des effets actifs
-      setTimeout(() => {
-        updateStatusActiveEffect(actor, actor.system.status);
-      }, 100);
-    }
-  });
-
   // Informer les utilisateurs du système de gestion des dégâts
   if (!game.user.isGM && game.users.some((u) => u.isGM && u.active)) {
     ui.notifications.info(
@@ -187,14 +116,6 @@ Hooks.once("ready", function () {
       "Aucun GM connecté. Les dégâts ne pourront pas être appliqués automatiquement."
     );
   }
-
-  // Initialiser les effets actifs des acteurs existants au démarrage
-  game.actors.forEach((actor) => {
-    if (actor.system?.status && actor.system.status !== "none") {
-      // Appliquer l'effet actif sur l'acteur
-      updateStatusActiveEffect(actor, actor.system.status);
-    }
-  });
 });
 
 /* -------------------------------------------- */
@@ -545,173 +466,4 @@ window.testApplyDamage = async function (actorId, damage) {
   }
 };
 
-/* -------------------------------------------- */
-/*  Token Status Effects Management            */
-/* -------------------------------------------- */
-/*  Active Effects Status Management           */
-/* -------------------------------------------- */
-
-/**
- * Met à jour l'Active Effect de statut d'un acteur (comme les Temporary Effects)
- * @param {Actor} actor - L'acteur
- * @param {string} newStatus - Le nouveau statut ("none" pour supprimer)
- */
-async function updateStatusActiveEffect(actor, newStatus) {
-  // Supprimer l'ancien effet de statut s'il existe
-  await removeExistingStatusEffect(actor);
-
-  // Si le nouveau statut n'est pas "none", créer un nouvel Active Effect
-  if (newStatus && newStatus !== "none") {
-    await createStatusActiveEffect(actor, newStatus);
-  }
-}
-
-/**
- * Supprime l'Active Effect de statut existant
- * @param {Actor} actor - L'acteur
- */
-async function removeExistingStatusEffect(actor) {
-  const existingEffect = actor.effects.find(
-    (effect) => effect.flags?.jaySpik?.isStatusEffect
-  );
-
-  if (existingEffect) {
-    await existingEffect.delete();
-  }
-}
-
-/**
- * Crée un Temporary Effect de statut (s'affiche sur les tokens)
- * @param {Actor} actor - L'acteur
- * @param {string} statusKey - La clé du statut
- */
-async function createStatusActiveEffect(actor, statusKey) {
-  const statusConfig = CONFIG.JAY_SPIK?.statuses?.[statusKey];
-  if (!statusConfig) return;
-
-  // Créer un Temporary Effect (pas un Active Effect passif)
-  const effectData = {
-    name: statusConfig.label,
-    icon: convertFontAwesomeToPath(statusConfig.icon),
-    changes: [], // Pas de changement de stats - effet purement visuel
-    flags: {
-      jaySpik: {
-        isStatusEffect: true,
-        statusKey: statusKey,
-      },
-      core: {
-        statusId: `jayspik-${statusKey}`,
-      },
-    },
-    duration: {
-      // Propriétés pour un Temporary Effect
-      rounds: undefined,
-      seconds: undefined,
-      startRound: undefined,
-      startTime: undefined,
-    },
-    disabled: false,
-    transfer: true, // CRUCIAL : permet l'affichage sur les tokens
-    origin: actor.uuid, // Important pour les Temporary Effects
-    statuses: [`jayspik-${statusKey}`], // Status ID pour l'affichage sur token
-  };
-
-  await actor.createEmbeddedDocuments("ActiveEffect", [effectData]);
-}
-
-/* -------------------------------------------- */
-/*  Anciennes fonctions Token (commentées)     */
-/*  Maintenant remplacées par les status effects natifs */
-/* -------------------------------------------- */
-
-/*
- * Met à jour l'affichage du statut sur un token
- * @param {Token} token - Le token à mettre à jour
- */
-/*
-function updateTokenStatusDisplay(token) {
-  if (!token?.actor?.system?.status || token.actor.system.status === "none") {
-    // Pas de statut ou statut "none", supprimer l'icône si elle existe
-    removeStatusIcon(token);
-    return;
-  }
-
-  const status = token.actor.system.status;
-  const statusConfig = CONFIG.JAY_SPIK?.statuses?.[status];
-
-  if (!statusConfig) {
-    removeStatusIcon(token);
-    return;
-  }
-
-  // Créer ou mettre à jour l'icône de statut
-  createStatusIcon(token, status, statusConfig);
-}
-*/
-
-/*
- * Crée une icône de statut sur un token
- * @param {Token} token - Le token
- * @param {string} statusKey - La clé du statut
- * @param {Object} statusConfig - La configuration du statut
- */
-/*
-function createStatusIcon(token, statusKey, statusConfig) {
-  // Supprimer l'ancienne icône si elle existe
-  removeStatusIcon(token);
-
-  // Créer le conteneur d'icône
-  const iconElement = document.createElement("div");
-  iconElement.className = `token-status-icon ${statusKey}`;
-  iconElement.innerHTML = `<i class="${statusConfig.icon}"></i>`;
-  iconElement.style.backgroundColor = statusConfig.color;
-  iconElement.title = `${statusConfig.label}: ${getStatusDescription(
-    statusKey
-  )}`;
-
-  // Ajouter l'icône au token
-  const tokenElement = token.mesh?.texture?.baseTexture?.resource?.source;
-  if (tokenElement?.parentElement) {
-    iconElement.setAttribute("data-jay-spik-status", statusKey);
-    tokenElement.parentElement.appendChild(iconElement);
-  }
-}
-*/
-
-/*
- * Supprime l'icône de statut d'un token
- * @param {Token} token - Le token
- */
-/*
-function removeStatusIcon(token) {
-  const tokenElement = token.mesh?.texture?.baseTexture?.resource?.source;
-  if (tokenElement?.parentElement) {
-    const existingIcon = tokenElement.parentElement.querySelector(
-      "[data-jay-spik-status]"
-    );
-    if (existingIcon) {
-      existingIcon.remove();
-    }
-  }
-}
-*/
-
-/*
- * Récupère la description d'un statut
- * @param {string} statusKey - La clé du statut
- * @returns {string} La description du statut
- */
-/*
-function getStatusDescription(statusKey) {
-  const descriptions = {
-    defensive:
-      "Le personnage adopte une posture défensive, privilégiant la protection. +10 en défense, -5 en attaque.",
-    aggressive:
-      "Le personnage attaque sans retenue, sacrifiant sa défense pour l'offensive. +10 en attaque, -5 en défense.",
-    focused:
-      "Le personnage se concentre profondément, améliorant ses capacités mentales. +15 en mental, -10 en physique.",
-  };
-
-  return descriptions[statusKey] || "Statut inconnu";
-}
-*/
+// Usage: testApplyDamage("actor-id", 10)

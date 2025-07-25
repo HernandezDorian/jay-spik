@@ -80,16 +80,6 @@ export class JaySpikActorSheet extends ActorSheet {
     // Adding a pointer to CONFIG.JAY_SPIK
     context.config = CONFIG.JAY_SPIK;
 
-    // Préparer les descriptions de statuts pour les tooltips de manière dynamique
-    context.statusDescriptions = {};
-    if (CONFIG.JAY_SPIK?.statuses) {
-      for (const [key, status] of Object.entries(CONFIG.JAY_SPIK.statuses)) {
-        if (key !== "none") {
-          context.statusDescriptions[key] = status.description || "";
-        }
-      }
-    }
-
     // Prepare character data and items.
     if (actorData.type == "character") {
       this._prepareItems(context);
