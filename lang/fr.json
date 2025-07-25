@@ -23,6 +23,14 @@
       "Temporary": "Effets Temporaires",
       "Passive": "Effets Passifs",
       "Inactive": "Effets Inactifs"
+    },
+    "Posture": {
+      "None": "Aucun",
+      "Offensive": "Offensif",
+      "Defensive": "Défensif",
+      "Concentration": "Concentration",
+      "CurrentPosture": "Posture actuelle",
+      "CombatPosture": "Posture de combat"
     }
   },
 

@@ -85,6 +85,30 @@
 
         {{!-- For the main features list, span the right two columns --}}
         <section class="main grid-span-2">
+          {{!-- Section de posture --}}
+          <section class="posture-section">
+            <header class="posture-header">
+              <h3>Posture de combat</h3>
+            </header>
+            <div class="posture-form flexrow">
+              <div class="posture-select flex-group-center">
+                <label for="posture-select">Posture actuelle:</label>
+                <select name="posture-select" id="posture-select" data-current="{{system.posture.current}}">
+                  {{#each postures as |posture|}}
+                    <option value="{{posture.key}}" {{#if (eq posture.key ../system.posture.current)}}selected{{/if}}>
+                      {{posture.label}}
+                    </option>
+                  {{/each}}
+                </select>
+              </div>
+            </div>
+            {{#if currentPostureConfig}}
+            <div class="posture-description">
+              <p><strong>{{currentPostureConfig.label}}:</strong> {{currentPostureConfig.description}}</p>
+            </div>
+            {{/if}}
+          </section>
+
           {{!-- Section de jet personnalisé --}}
           <section class="custom-roll-section">
             <header class="custom-roll-header">

@@ -84,6 +84,7 @@ export class JaySpikActorSheet extends ActorSheet {
     if (actorData.type == "character") {
       this._prepareItems(context);
       this._prepareCharacterData(context);
+      await this._preparePostureData(context);
     }
 
     // Prepare NPC data and items.
@@ -192,6 +193,24 @@ export class JaySpikActorSheet extends ActorSheet {
     }
 
     context.equipmentTotals = totals;
+  }
+
+  /**
+   * Prépare les données des postures pour la fiche
+   * @param {Object} context Le contexte de données de la fiche
+   * @private
+   */
+  async _preparePostureData(context) {
+    const { getPosturesForSelect, getPostureConfig } = await import(
+      "../config/postures-config.mjs"
+    );
+
+    // Récupérer toutes les postures disponibles
+    context.postures = getPosturesForSelect();
+
+    // Récupérer la configuration de la posture actuelle
+    const currentPosture = context.system?.posture?.current || "none";
+    context.currentPostureConfig = getPostureConfig(currentPosture);
   }
 
   /**
@@ -357,6 +376,9 @@ export class JaySpikActorSheet extends ActorSheet {
       "#custom-roll-bonus",
       this._onCustomRollBonusChange.bind(this)
     );
+
+    // Posture management
+    html.on("change", "#posture-select", this._onPostureChange.bind(this));
 
     // Active Effect management
     html.on("click", ".effect-control", (ev) => {
@@ -1198,5 +1220,26 @@ export class JaySpikActorSheet extends ActorSheet {
         isSuccess ? "Réussite" : "Échec"
       }`
     );
+  }
+
+  /**
+   * Handle changing the actor's posture
+   * @param {Event} event   The originating change event
+   * @private
+   */
+  async _onPostureChange(event) {
+    event.preventDefault();
+    const select = event.currentTarget;
+    const newPosture = select.value;
+
+    try {
+      await this.actor.system.changePosture(newPosture);
+      ui.notifications.info(
+        `Posture changée: ${select.options[select.selectedIndex].text}`
+      );
+    } catch (error) {
+      console.error("Erreur lors du changement de posture:", error);
+      ui.notifications.error("Erreur lors du changement de posture");
+    }
   }
 }

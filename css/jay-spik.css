@@ -1023,3 +1023,89 @@ input[name="system.power.value"] {
   color: #dc3545;
   border: 1px solid #dc3545;
 }
+
+/* ========================================= */
+/* STYLES POUR LES POSTURES                 */
+/* ========================================= */
+
+.posture-section {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: rgba(153, 68, 255, 0.05);
+  border: 1px solid rgba(153, 68, 255, 0.2);
+  border-radius: 8px;
+}
+
+.posture-header {
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.posture-header h3 {
+  margin: 0;
+  font-size: 1.2em;
+  color: #9944ff;
+  font-weight: bold;
+}
+
+.posture-form {
+  display: flex;
+  gap: 15px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.posture-select {
+  flex: 1;
+  min-width: 200px;
+}
+
+.posture-select label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
+  font-size: 0.9em;
+}
+
+.posture-select select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 0.9em;
+  background: white;
+}
+
+.posture-select select:focus {
+  outline: none;
+  border-color: #9944ff;
+  box-shadow: 0 0 0 2px rgba(153, 68, 255, 0.2);
+}
+
+.posture-description {
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(153, 68, 255, 0.08);
+  border-radius: 4px;
+  font-size: 0.9em;
+  color: #555;
+}
+
+.posture-description p {
+  margin: 0;
+}
+
+/* Responsive pour petits écrans */
+@media (max-width: 600px) {
+  .posture-form {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .posture-select {
+    flex: none;
+    width: 100%;
+  }
+}

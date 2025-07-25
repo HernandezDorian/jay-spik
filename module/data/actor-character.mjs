@@ -1,5 +1,6 @@
 import JaySpikActorBase from "./base-actor.mjs";
 import { STATS_CONFIG } from "../config/stats-config.mjs";
+import { getDefaultPosture } from "../config/postures-config.mjs";
 
 export default class JaySpikCharacter extends JaySpikActorBase {
   static defineSchema() {
@@ -26,6 +27,14 @@ export default class JaySpikCharacter extends JaySpikActorBase {
       });
     }
     schema.abilities = new fields.SchemaField(abilitiesSchema);
+
+    // Système de postures
+    schema.posture = new fields.SchemaField({
+      current: new fields.StringField({
+        required: true,
+        initial: getDefaultPosture(),
+      }),
+    });
 
     schema.armor = new fields.SchemaField({
       value: new fields.NumberField({
@@ -493,11 +502,154 @@ export default class JaySpikCharacter extends JaySpikActorBase {
     await ChatMessage.create(messageData);
 
     return {
-      skill,
       roll,
-      threshold,
       isSuccess,
       margin,
+      threshold,
     };
+  }
+
+  /**
+   * Change la posture du personnage et gère les effets temporaires associés
+   * @param {string} postureKey - La clé de la nouvelle posture
+   */
+  async changePosture(postureKey) {
+    const { getPostureConfig, getDefaultPosture } = await import(
+      "../config/postures-config.mjs"
+    );
+
+    // Supprimer l'ancien effet de posture s'il existe
+    await this.removePostureEffect();
+
+    // Mettre à jour la posture actuelle
+    await this.parent.update({ "system.posture.current": postureKey });
+
+    // Si ce n'est pas la posture par défaut, créer l'effet temporaire
+    if (postureKey !== getDefaultPosture()) {
+      await this.createPostureEffect(postureKey);
+    }
+  }
+
+  /**
+   * Supprime l'effet temporaire de posture actuel
+   */
+  async removePostureEffect() {
+    // Trouver tous les effets de posture
+    const postureEffects = this.parent.effects.filter(
+      (effect) => effect.flags?.jayspik?.isPosture === true
+    );
+
+    // Supprimer tous les effets de posture trouvés
+    if (postureEffects.length > 0) {
+      const effectIds = postureEffects.map((effect) => effect.id);
+      await this.parent.deleteEmbeddedDocuments("ActiveEffect", effectIds);
+
+      console.log(
+        `JaySpik: Supprimé ${postureEffects.length} effet(s) de posture`
+      );
+    }
+  }
+
+  /**
+   * Crée un effet temporaire pour la posture donnée
+   * @param {string} postureKey - La clé de la posture
+   */
+  async createPostureEffect(postureKey) {
+    const { getPostureConfig } = await import("../config/postures-config.mjs");
+    const postureConfig = getPostureConfig(postureKey);
+
+    if (!postureConfig) {
+      console.warn(`Configuration de posture non trouvée pour: ${postureKey}`);
+      return;
+    }
+
+    // Vérifier qu'il n'y a pas déjà un effet de posture (sécurité supplémentaire)
+    const existingPostureEffect = this.parent.effects.find(
+      (effect) => effect.flags?.jayspik?.isPosture === true
+    );
+
+    if (existingPostureEffect) {
+      console.warn(
+        "JaySpik: Un effet de posture existe déjà, suppression avant création du nouveau"
+      );
+      await this.removePostureEffect();
+    }
+
+    // Mapper les icônes FontAwesome vers des icônes Foundry compatibles
+    const iconMap = {
+      "fas fa-sword": "icons/weapons/swords/sword-broad-blue.webp",
+      "fas fa-shield-alt":
+        "icons/equipment/shield/shield-round-boss-steel.webp",
+      "fas fa-eye":
+        "icons/magic/perception/eye-ringed-glow-angry-large-red.webp",
+      "fas fa-circle": "icons/sundries/misc/button-circle-steel.webp",
+    };
+
+    const effectData = {
+      name: `Posture: ${postureConfig.label}`,
+      img:
+        iconMap[postureConfig.icon] ||
+        "icons/sundries/misc/button-circle-steel.webp",
+      disabled: false,
+      duration: {
+        seconds: null, // Durée indéterminée
+        rounds: null,
+        turns: null,
+        startTime: null,
+        startRound: null,
+        startTurn: null,
+      },
+      transfer: false, // Important : empêche le transfert vers les tokens
+      flags: {
+        jayspik: {
+          isPosture: true,
+          postureKey: postureKey,
+        },
+        core: {
+          statusId: `posture-${postureKey}`, // ID de statut unique pour la posture
+        },
+      },
+      changes: [],
+      description: postureConfig.description,
+      origin: this.parent.uuid, // Définit l'origine de l'effet
+      statuses: [`posture-${postureKey}`], // Ajoute un statut spécifique
+    };
+
+    // Ajouter les modifications d'effets si définis
+    if (postureConfig.effects) {
+      for (const [stat, value] of Object.entries(postureConfig.effects)) {
+        if (stat === "damage" || stat === "defense" || stat === "spellPower") {
+          // Ces effets peuvent être gérés différemment selon votre système
+          effectData.changes.push({
+            key: `flags.jayspik.posture.${stat}`,
+            mode: 2, // ADD
+            value: value.toString(),
+          });
+        } else {
+          // Pour les statistiques normales (mental, physique, social)
+          effectData.changes.push({
+            key: `system.abilities.${stat}.value`,
+            mode: 2, // ADD
+            value: value.toString(),
+          });
+        }
+      }
+    }
+
+    const createdEffects = await this.parent.createEmbeddedDocuments(
+      "ActiveEffect",
+      [effectData]
+    );
+
+    if (createdEffects && createdEffects.length > 0) {
+      console.log(
+        `JaySpik: Effet temporaire de posture "${postureConfig.label}" créé avec succès`
+      );
+
+      // Notification pour l'utilisateur
+      if (game.user.isGM || this.parent.isOwner) {
+        ui.notifications.info(`Posture "${postureConfig.label}" activée`);
+      }
+    }
   }
 }
