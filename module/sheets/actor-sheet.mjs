@@ -584,19 +584,128 @@ export class JaySpikActorSheet extends ActorSheet {
    */
   async _applyDamageToTargets(roll, item, targets) {
     const totalDamage = roll.total;
+    const armorPiercing = item.system.armorPiercing || false;
+
+    console.log("_applyDamageToTargets appelé:", {
+      totalDamage,
+      armorPiercing,
+      targets: targets.length,
+    });
+
+    try {
+      // Si on est GM, on applique directement
+      if (game.user.isGM) {
+        console.log("GM applique directement les dégâts");
+        return await this._applyDamageDirectly(roll, item, targets);
+      }
+
+      // Pour les joueurs, créer un message de chat avec boutons d'application
+      console.log("Joueur crée un message de chat avec boutons de dégâts");
+      await this._createDamageMessageWithButtons(roll, item, targets);
+    } catch (error) {
+      console.error("Erreur lors de l'application des dégâts:", error);
+      ui.notifications.error(
+        `Erreur lors de l'application des dégâts: ${error.message}`
+      );
+
+      // Afficher quand même le roll sans appliquer les dégâts
+      roll.toMessage({
+        speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+        flavor: `<strong>${item.name}</strong> - Dégâts (Non appliqués: ${error.message})`,
+        rollMode: game.settings.get("core", "rollMode"),
+      });
+    }
+  }
+
+  /**
+   * Apply damage directly (for GM) - version simplifiée sans socket
+   * @param {Roll} roll - The damage roll
+   * @param {Item} item - The weapon/spell used
+   * @param {Array} targets - Array of targeted tokens
+   * @private
+   */
+  async _applyDamageDirectly(roll, item, targets) {
+    const totalDamage = roll.total;
+    const armorPiercing = item.system.armorPiercing || false;
     const results = [];
 
-    for (const target of targets) {
-      if (!target.actor) continue;
+    console.log("Application directe des dégâts par le GM");
 
-      // Utiliser la méthode applyDamage du modèle d'acteur
-      const result = await target.actor.system.applyDamage(totalDamage);
-      result.target = target.actor.name;
-      results.push(result);
+    for (const target of targets) {
+      try {
+        if (!target.actor) {
+          console.warn("Token sans acteur:", target.name);
+          continue;
+        }
+
+        // Utiliser la méthode applyDamage de l'acteur si elle existe
+        if (
+          target.actor.system &&
+          typeof target.actor.system.applyDamage === "function"
+        ) {
+          console.log(
+            `Application des dégâts via applyDamage pour ${target.actor.name}`
+          );
+          const result = await target.actor.system.applyDamage(
+            totalDamage,
+            armorPiercing
+          );
+          result.target = target.actor.name;
+          results.push(result);
+        } else {
+          console.log(
+            `Application manuelle des dégâts pour ${target.actor.name}`
+          );
+          // Méthode manuelle si applyDamage n'existe pas
+          const armor = armorPiercing
+            ? 0
+            : target.actor.system.getTotalArmor
+            ? target.actor.system.getTotalArmor()
+            : 0;
+          const finalDamage = Math.max(0, totalDamage - armor);
+
+          if (finalDamage > 0) {
+            const currentHealth = target.actor.system.health.value;
+            const newHealth = Math.max(0, currentHealth - finalDamage);
+
+            await target.actor.update({
+              "system.health.value": newHealth,
+            });
+
+            console.log(
+              `Dégâts appliqués à ${target.actor.name}: ${currentHealth} -> ${newHealth}`
+            );
+          }
+
+          results.push({
+            target: target.actor.name,
+            damageRolled: totalDamage,
+            armor: armor,
+            finalDamage: finalDamage,
+            blocked: totalDamage - finalDamage,
+            armorPiercing: armorPiercing,
+          });
+        }
+      } catch (error) {
+        console.error(
+          `Erreur lors de l'application des dégâts à ${target.actor?.name}:`,
+          error
+        );
+        results.push({
+          target: target.actor?.name || target.name,
+          error: error.message,
+          damageRolled: totalDamage,
+          finalDamage: 0,
+          armor: 0,
+          blocked: 0,
+        });
+      }
     }
 
     // Créer le message de chat avec les résultats
     await this._createDamageMessage(roll, item, results);
+
+    return results;
   }
 
   /**
@@ -608,26 +717,38 @@ export class JaySpikActorSheet extends ActorSheet {
    */
   async _createDamageMessage(roll, item, results) {
     let messageContent = `<div class="damage-results">
-      <h3><strong>${item.name}</strong> - Dégâts</h3>
-      <div class="damage-roll">Dégâts lancés: <strong>${roll.total}</strong></div>
+      <h3><strong>${item.name}</strong> - Dégâts${
+      item.system.armorPiercing
+        ? ' <span class="armor-piercing-indicator">🗲 Perce-Armure</span>'
+        : ""
+    }</h3>
+      <div class="damage-roll">Dégâts lancés: <strong>${
+        roll.total
+      }</strong></div>
     `;
 
     for (const result of results) {
       messageContent += `
         <div class="target-result" style="margin: 5px 0; padding: 5px; border: 1px solid #ccc; border-radius: 3px;">
           <strong>${result.target}</strong><br/>
-          <span style="color: #666;">Armure: ${result.armor}</span><br/>
+          ${
+            result.armorPiercing
+              ? '<span style="color: #ff5722; font-weight: bold;">Armure ignorée (Perce-Armure)</span><br/>'
+              : `<span style="color: #666;">Armure: ${result.armor}</span><br/>`
+          }
           <span style="color: ${
             result.finalDamage > 0 ? "#d32f2f" : "#4caf50"
           };">
             ${
               result.finalDamage > 0
                 ? `${result.finalDamage} dégâts infligés`
+                : result.armorPiercing
+                ? "Aucun dégât"
                 : "Aucun dégât (bloqué par l'armure)"
             }
           </span>
           ${
-            result.blocked > 0
+            result.blocked > 0 && !result.armorPiercing
               ? `<br/><span style="color: #ff9800; font-size: 0.9em;">(${result.blocked} bloqués par l'armure)</span>`
               : ""
           }
@@ -643,5 +764,135 @@ export class JaySpikActorSheet extends ActorSheet {
       flavor: messageContent,
       rollMode: game.settings.get("core", "rollMode"),
     });
+  }
+
+  /**
+   * Create a damage message with apply buttons for GM (player version)
+   * @param {Roll} roll - The damage roll
+   * @param {Item} item - The weapon/spell used
+   * @param {Array} targets - Array of targeted tokens
+   * @private
+   */
+  async _createDamageMessageWithButtons(roll, item, targets) {
+    const totalDamage = roll.total;
+    const armorPiercing = item.system.armorPiercing || false;
+
+    console.log("=== _createDamageMessageWithButtons DEBUG ===");
+    console.log("Targets reçus:", targets);
+    console.log("Nombre de targets:", targets.length);
+
+    // Préparer les données des cibles avec plus de debugging
+    const targetData = targets
+      .map((target, index) => {
+        console.log(`Target ${index}:`, target);
+        console.log(`  target.id: ${target.id}`);
+        console.log(`  target.name: ${target.name}`);
+        console.log(`  target.actor: ${target.actor}`);
+        console.log(`  target.actor?.id: ${target.actor?.id}`);
+        console.log(`  target.actor?.name: ${target.actor?.name}`);
+
+        const data = {
+          id: target.id,
+          name: target.actor?.name || target.name,
+          actorId: target.actor?.id,
+          armor: target.actor?.system?.getTotalArmor
+            ? target.actor.system.getTotalArmor()
+            : 0,
+        };
+
+        console.log(`  Données préparées:`, data);
+        return data;
+      })
+      .filter((t) => {
+        const hasActorId = !!t.actorId;
+        console.log(`Target ${t.name} - a un actorId: ${hasActorId}`);
+        return hasActorId;
+      });
+
+    console.log("Données finales des cibles:", targetData);
+
+    if (targetData.length === 0) {
+      ui.notifications.warn("Aucune cible valide trouvée.");
+      return;
+    }
+
+    // Calculer les dégâts prévisionnels pour chaque cible
+    const damagePreview = targetData.map((target) => {
+      const armor = armorPiercing ? 0 : target.armor;
+      const finalDamage = Math.max(0, totalDamage - armor);
+      return {
+        ...target,
+        armor: armor,
+        finalDamage: finalDamage,
+        blocked: totalDamage - finalDamage,
+      };
+    });
+
+    // Créer le contenu HTML avec boutons
+    const armorPiercingIcon = armorPiercing ? "🗲" : "";
+    let content = `
+      <div class="damage-application">
+        <h3><strong>${item.name}</strong> ${armorPiercingIcon}</h3>
+        <p><strong>Dégâts:</strong> ${totalDamage}</p>
+        ${armorPiercing ? "<p><em>Perce-Armure activé</em></p>" : ""}
+        
+        <div class="targets-preview">
+          <h4>Cibles touchées:</h4>
+    `;
+
+    damagePreview.forEach((target) => {
+      content += `
+        <div class="target-damage" style="margin-bottom: 8px; padding: 4px; border: 1px solid #ccc;">
+          <strong>${target.name}</strong><br>
+          Armure: ${target.armor} | Dégâts finaux: <strong>${
+        target.finalDamage
+      }</strong>
+          ${target.blocked > 0 ? `| Bloqués: ${target.blocked}` : ""}
+        </div>
+      `;
+    });
+
+    content += `
+        </div>
+        
+        <div class="damage-buttons" style="margin-top: 10px;">
+          <button type="button" class="apply-damage" data-targets='${JSON.stringify(
+            targetData
+          )}' data-damage="${totalDamage}" data-armor-piercing="${armorPiercing}" data-item-name="${
+      item.name
+    }">
+            <i class="fas fa-sword"></i> Appliquer les dégâts
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Envoyer le message au chat
+    const messageData = {
+      user: game.user.id,
+      speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+      content: content,
+      style: CONST.CHAT_MESSAGE_STYLES.OTHER,
+      flags: {
+        "jay-spik": {
+          type: "damage-application",
+          roll: roll.toJSON(),
+          targets: targetData,
+          damage: totalDamage,
+          armorPiercing: armorPiercing,
+          itemName: item.name,
+        },
+      },
+    };
+
+    // Afficher aussi le jet de dés
+    await roll.toMessage({
+      speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+      flavor: `<strong>${item.name}</strong> - Jet de dégâts ${armorPiercingIcon}`,
+      rollMode: game.settings.get("core", "rollMode"),
+    });
+
+    // Créer le message avec les boutons
+    await ChatMessage.create(messageData);
   }
 }

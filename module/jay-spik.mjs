@@ -7,6 +7,7 @@ import { JaySpikItemSheet } from "./sheets/item-sheet.mjs";
 // Import helper/utility classes and constants.
 import { preloadHandlebarsTemplates } from "./helpers/templates.mjs";
 import { JAY_SPIK } from "./helpers/config.mjs";
+import { DamageManager } from "./helpers/damage-manager.mjs";
 // Import DataModel classes
 import * as models from "./data/_module.mjs";
 
@@ -21,6 +22,7 @@ Hooks.once("init", function () {
     JaySpikActor,
     JaySpikItem,
     rollItemMacro,
+    DamageManager,
   };
 
   // Add custom constants for configuration.
@@ -98,8 +100,22 @@ Handlebars.registerHelper("eq", function (a, b) {
 /* -------------------------------------------- */
 
 Hooks.once("ready", function () {
+  // Initialize the damage manager for socket communication
+  DamageManager.initialize();
+
   // Wait to register hotbar drop hook on ready so that modules could register earlier if they want to
   Hooks.on("hotbarDrop", (bar, data, slot) => createItemMacro(data, slot));
+
+  // Informer les utilisateurs du système de gestion des dégâts
+  if (!game.user.isGM && game.users.some((u) => u.isGM && u.active)) {
+    ui.notifications.info(
+      "Système de dégâts automatisé activé. Les dégâts seront appliqués automatiquement par le GM."
+    );
+  } else if (!game.user.isGM && !game.users.some((u) => u.isGM && u.active)) {
+    ui.notifications.warn(
+      "Aucun GM connecté. Les dégâts ne pourront pas être appliqués automatiquement."
+    );
+  }
 });
 
 /* -------------------------------------------- */
@@ -167,3 +183,287 @@ function rollItemMacro(itemUuid) {
     item.roll();
   });
 }
+
+/* -------------------------------------------- */
+/*  Chat Message Hooks                          */
+/* -------------------------------------------- */
+
+// Gestionnaire de clics pour les boutons d'application de dégâts
+Hooks.on("renderChatMessage", (message, html, data) => {
+  html.find(".apply-damage").click(async (event) => {
+    event.preventDefault();
+
+    // Seuls les GMs peuvent appliquer les dégâts
+    if (!game.user.isGM) {
+      ui.notifications.warn("Seul le GM peut appliquer les dégâts.");
+      return;
+    }
+
+    const button = event.currentTarget;
+    const targets = JSON.parse(button.dataset.targets);
+    const damage = parseInt(button.dataset.damage);
+    const armorPiercing = button.dataset.armorPiercing === "true";
+    const itemName = button.dataset.itemName;
+
+    console.log("Application des dégâts via bouton chat:", {
+      targets,
+      damage,
+      armorPiercing,
+    });
+
+    // Debugging détaillé
+    console.log("=== DEBUG DÉTAILLÉ ===");
+    console.log("Nombre de cibles:", targets.length);
+    console.log("game.user.isGM:", game.user.isGM);
+    console.log("game.actors:", game.actors);
+    console.log("canvas.tokens:", canvas.tokens?.objects);
+
+    try {
+      const results = [];
+
+      for (const target of targets) {
+        console.log(`--- Traitement de la cible: ${target.name} ---`);
+        console.log("Target data:", target);
+
+        // IMPORTANT: Récupérer d'abord l'acteur via le token (priorité car c'est ce qui est sur la scène)
+        let actor = null;
+
+        // 1. Essayer via le token sur le canvas (ActorDelta si token lié)
+        if (target.id) {
+          const token = canvas.tokens.get(target.id);
+          console.log(`canvas.tokens.get(${target.id}):`, token);
+          if (token && token.actor) {
+            actor = token.actor;
+            console.log(
+              "✅ Acteur récupéré via canvas token (priorité):",
+              actor
+            );
+            console.log("Type d'acteur:", actor.constructor.name);
+          }
+        }
+
+        // 2. Si pas trouvé, essayer via les token documents de la scène
+        if (!actor && target.id) {
+          console.log("Essai via game.scenes.current.tokens");
+          const tokenDoc = game.scenes.current?.tokens?.get(target.id);
+          console.log(`Token document trouvé:`, tokenDoc);
+          if (tokenDoc?.actor) {
+            actor = tokenDoc.actor;
+            console.log("✅ Acteur récupéré via token document:", actor);
+            console.log("Type d'acteur:", actor.constructor.name);
+          }
+        }
+
+        // 3. En dernier recours, utiliser l'acteur de base
+        if (!actor) {
+          console.log("Fallback: récupération via game.actors");
+          actor = game.actors.get(target.actorId);
+          console.log(`game.actors.get(${target.actorId}):`, actor);
+          if (actor) {
+            console.log(
+              "⚠️ Acteur récupéré via game.actors (fallback):",
+              actor
+            );
+            console.log("Type d'acteur:", actor.constructor.name);
+          }
+        }
+
+        if (!actor) {
+          console.warn(`Acteur définitivement non trouvé: ${target.name}`);
+          results.push({
+            target: target.name,
+            error: "Acteur non trouvé",
+            damageRolled: damage,
+            finalDamage: 0,
+            armor: 0,
+            blocked: 0,
+          });
+          continue;
+        }
+
+        console.log(
+          `Acteur trouvé: ${actor.name} (Type: ${actor.constructor.name})`
+        );
+        console.log("actor.system:", actor.system);
+        console.log(
+          "typeof actor.system.applyDamage:",
+          typeof actor.system.applyDamage
+        );
+
+        try {
+          // Essayer d'abord la méthode alternative applyDamageDirectly
+          if (
+            actor.system &&
+            typeof actor.system.applyDamageDirectly === "function"
+          ) {
+            console.log(
+              `==> Application des dégâts via applyDamageDirectly pour ${actor.name}`
+            );
+            console.log(
+              `Paramètres: damage=${damage}, armorPiercing=${armorPiercing}`
+            );
+
+            const result = await actor.system.applyDamageDirectly(
+              damage,
+              armorPiercing,
+              actor
+            );
+            console.log("Résultat de applyDamageDirectly:", result);
+
+            result.target = actor.name;
+            results.push(result);
+          }
+          // Sinon utiliser la méthode applyDamage de l'acteur si elle existe
+          else if (
+            actor.system &&
+            typeof actor.system.applyDamage === "function"
+          ) {
+            console.log(
+              `==> Application des dégâts via applyDamage pour ${actor.name}`
+            );
+            console.log(
+              `Paramètres: damage=${damage}, armorPiercing=${armorPiercing}`
+            );
+
+            const result = await actor.system.applyDamage(
+              damage,
+              armorPiercing
+            );
+            console.log("Résultat de applyDamage:", result);
+
+            result.target = actor.name;
+            results.push(result);
+          } else {
+            console.log(
+              `==> Application manuelle des dégâts pour ${actor.name}`
+            );
+            console.log(
+              "actor.system.getTotalArmor:",
+              typeof actor.system.getTotalArmor
+            );
+
+            // Méthode manuelle si applyDamage n'existe pas
+            const armor = armorPiercing
+              ? 0
+              : actor.system.getTotalArmor
+              ? actor.system.getTotalArmor()
+              : 0;
+            console.log(`Armure calculée: ${armor}`);
+
+            const finalDamage = Math.max(0, damage - armor);
+            const blocked = damage - finalDamage;
+            console.log(`Dégâts: ${damage} - ${armor} = ${finalDamage}`);
+
+            if (finalDamage > 0) {
+              const currentHealth = actor.system.health.value;
+              const newHealth = Math.max(0, currentHealth - finalDamage);
+              console.log(`Santé: ${currentHealth} -> ${newHealth}`);
+
+              console.log("Appel de actor.update...");
+              const updateResult = await actor.update({
+                "system.health.value": newHealth,
+              });
+              console.log("Résultat de l'update:", updateResult);
+
+              console.log(
+                `Dégâts appliqués à ${actor.name}: ${currentHealth} -> ${newHealth}`
+              );
+            } else {
+              console.log("Aucun dégât à appliquer (finalDamage <= 0)");
+            }
+
+            results.push({
+              target: actor.name,
+              damageRolled: damage,
+              armor: armor,
+              finalDamage: finalDamage,
+              blocked: blocked,
+              armorPiercing: armorPiercing,
+            });
+          }
+        } catch (actorError) {
+          console.error(
+            `Erreur lors de l'application des dégâts à ${actor.name}:`,
+            actorError
+          );
+          results.push({
+            target: actor.name,
+            error: actorError.message,
+            damageRolled: damage,
+            finalDamage: 0,
+            armor: 0,
+            blocked: 0,
+          });
+        }
+      }
+
+      console.log("=== FIN DEBUG - Résultats finaux ===");
+      console.log("Results:", results);
+
+      // Créer un message de résultats
+      let resultContent = `<div class="damage-results"><h4>Résultats de ${itemName}</h4>`;
+
+      results.forEach((result) => {
+        if (result.error) {
+          resultContent += `<p><strong>${result.target}:</strong> <em>${result.error}</em></p>`;
+        } else {
+          const armorText =
+            result.armor > 0 ? ` (${result.blocked} bloqués par l'armure)` : "";
+          resultContent += `<p><strong>${result.target}:</strong> ${result.finalDamage} dégâts${armorText}</p>`;
+        }
+      });
+
+      resultContent += "</div>";
+
+      // Envoyer le message de résultats
+      await ChatMessage.create({
+        user: game.user.id,
+        content: resultContent,
+        style: CONST.CHAT_MESSAGE_STYLES.OTHER,
+      });
+
+      // Désactiver le bouton pour éviter les doubles applications
+      button.disabled = true;
+      button.textContent = "Dégâts appliqués";
+      button.style.opacity = "0.5";
+
+      ui.notifications.success("Dégâts appliqués avec succès!");
+    } catch (error) {
+      console.error("Erreur lors de l'application des dégâts:", error);
+      ui.notifications.error(
+        `Erreur lors de l'application des dégâts: ${error.message}`
+      );
+    }
+  });
+});
+
+// Test manuel pour debug - à supprimer après
+window.testApplyDamage = async function (actorId, damage) {
+  console.log("=== TEST MANUEL D'APPLICATION DE DÉGÂTS ===");
+
+  const actor = game.actors.get(actorId);
+  console.log("Acteur trouvé:", actor);
+
+  if (!actor) {
+    console.error("Acteur non trouvé:", actorId);
+    return;
+  }
+
+  const currentHealth = actor.system.health.value;
+  console.log("Santé actuelle:", currentHealth);
+
+  const newHealth = Math.max(0, currentHealth - damage);
+  console.log("Nouvelle santé:", newHealth);
+
+  try {
+    const result = await actor.update({
+      "system.health.value": newHealth,
+    });
+    console.log("Résultat de l'update:", result);
+    console.log("Santé après update:", actor.system.health.value);
+  } catch (error) {
+    console.error("Erreur lors de l'update:", error);
+  }
+};
+
+// Usage: testApplyDamage("actor-id", 10)

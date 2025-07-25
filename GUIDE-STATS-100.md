@@ -180,3 +180,31 @@ Le système affiche dans le chat :
 #### Sans cible :
 
 Si aucune cible n'est sélectionnée, les dégâts sont simplement affichés dans le chat sans être appliqués.
+
+### Option Perce-Armure
+
+Les armes et sorts disposent maintenant d'une option **"Perce-Armure"** :
+
+#### Comment l'utiliser :
+
+1. **Ouvrez la fiche** d'une arme ou d'un sort
+2. **Cochez la case "Perce-Armure"** dans l'onglet approprié
+3. **Sauvegardez** la fiche
+
+#### Effets :
+
+- **Arme/Sort normal** : Dégâts - Armure = Dégâts finaux
+- **Arme/Sort perce-armure** : Dégâts = Dégâts finaux (armure ignorée)
+
+#### Indicateurs visuels :
+
+- **Éclair (🗲)** à côté du bouton de dégâts = Perce-Armure
+- **Message de chat** indique "Armure ignorée (Perce-Armure)"
+- **Titre coloré** en orange pour les objets perce-armure
+
+#### Exemples :
+
+- **Épée normale** (8 dégâts) vs Armure 3 → **5 dégâts**
+- **Épée perce-armure** (8 dégâts) vs Armure 3 → **8 dégâts**
+- **Sort normal** (12 dégâts) vs Armure 5 → **7 dégâts**
+- **Sort perce-armure** (12 dégâts) vs Armure 5 → **12 dégâts**

@@ -92,6 +92,7 @@
             {{#if item.system.damageFormula}}
               <a class="item-roll-damage rollable" data-item-id="{{item._id}}" title="Lancer les dégâts">
                 <i class="fas fa-dice-d20"></i> {{item.system.damageFormula}}
+                {{#if item.system.armorPiercing}}<span class="armor-piercing-indicator" title="Perce-Armure">🗲</span>{{/if}}
               </a>
             {{/if}}
           </div>

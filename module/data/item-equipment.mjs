@@ -68,6 +68,11 @@ export default class JaySpikEquipment extends JaySpikItemBase {
       blank: true,
     });
 
+    // Option perce-armure : ignore l'armure de la cible
+    schema.armorPiercing = new fields.BooleanField({
+      initial: false,
+    });
+
     // Liste des bonus/malus aux statistiques primaires (hérité du système existant)
     schema.bonusList = new fields.ArrayField(new fields.ObjectField());
 

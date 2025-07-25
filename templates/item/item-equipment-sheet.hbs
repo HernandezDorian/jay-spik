@@ -213,6 +213,20 @@
         <small>Utilisez @statname pour référencer les stats du personnage</small>
       </div>
       
+      <!-- Option Perce-Armure -->
+      <div class="resource">
+        <label class="resource-label">
+          <input
+            type="checkbox"
+            name="system.armorPiercing"
+            {{#if system.armorPiercing}}checked{{/if}}
+            data-dtype="Boolean"
+          />
+          Perce-Armure
+        </label>
+        <small>Si cochée, cette arme ignore l'armure de la cible</small>
+      </div>
+      
       <!-- Dégâts totaux calculés -->
       <div class="resource">
         <label class="resource-label">Dégâts Totaux</label>
@@ -239,7 +253,7 @@
             </select>
           </div>
           <div class="grid-span-1">
-            <select name="system.bonusList.{{@index}}.operator" data-dtype="String">
+            <select class="bonus-operatorstat" name="system.bonusList.{{@index}}.operator" data-dtype="String">
               <option value="+" {{#if (eq operator "+")}}selected{{/if}}>+</option>
               <option value="-" {{#if (eq operator "-")}}selected{{/if}}>-</option>
               <option value="*" {{#if (eq operator "*")}}selected{{/if}}>*</option>

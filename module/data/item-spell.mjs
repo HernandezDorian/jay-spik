@@ -23,6 +23,11 @@ export default class JaySpikSpell extends JaySpikItemBase {
       blank: true,
     });
 
+    // Option perce-armure : ignore l'armure de la cible
+    schema.armorPiercing = new fields.BooleanField({
+      initial: false,
+    });
+
     return schema;
   }
 }

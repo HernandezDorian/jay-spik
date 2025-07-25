@@ -81,6 +81,18 @@
         />
         <small>Utilisez @statname pour référencer les stats du personnage</small>
       </div>
+      <div class='resource'>
+        <label class='resource-label'>
+          <input
+            type='checkbox'
+            name='system.armorPiercing'
+            {{#if system.armorPiercing}}checked{{/if}}
+            data-dtype='Boolean'
+          />
+          Perce-Armure
+        </label>
+        <small>Si cochée, ce sort ignore l'armure de la cible</small>
+      </div>
     </div>
   </section>
 </form>

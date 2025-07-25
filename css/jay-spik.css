@@ -378,6 +378,10 @@
   margin-bottom: 10px;
 }
 
+.bonus-operatorstat {
+  margin-left: 50px;
+}
+
 /* Ligne d'ability individuelle */
 .jay-spik .ability {
   padding: 5px 0;
@@ -535,6 +539,39 @@
   background: #e67e22;
 }
 
+/* Armor Piercing indicator */
+.armor-piercing-indicator {
+  color: #ff5722;
+  font-weight: bold;
+  margin-left: 5px;
+  text-shadow: 0 0 3px rgba(255, 87, 34, 0.5);
+}
+
+.item-roll-damage .armor-piercing-indicator {
+  font-size: 12px;
+}
+
+/* Checkbox styling for armor piercing */
+.resource input[type="checkbox"] {
+  margin-right: 5px;
+  transform: scale(1.1);
+}
+
+.resource label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: bold;
+  color: #ff5722;
+}
+
+.resource label:has(input[type="checkbox"]:checked) {
+  background: rgba(255, 87, 34, 0.1);
+  padding: 5px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 87, 34, 0.3);
+}
+
 /* Equipment totals styling */
 .equipment-totals {
   margin-bottom: 15px;
@@ -578,14 +615,6 @@
   padding-bottom: 5px;
 }
 
-.damage-roll {
-  text-align: center;
-  font-size: 14px;
-  margin-bottom: 10px;
-  color: #d32f2f;
-  font-weight: bold;
-}
-
 .target-result {
   margin: 5px 0;
   padding: 8px;
@@ -598,4 +627,76 @@
 .target-result strong {
   color: #1976d2;
   font-size: 14px;
+}
+
+/* -------------------------------------------- */
+/*  Chat Messages Styles                        */
+/* -------------------------------------------- */
+
+.damage-application {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 5px 0;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.damage-application h3 {
+  margin-top: 0;
+  color: #8b4513;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 5px;
+}
+
+.targets-preview {
+  margin: 10px 0;
+}
+
+.target-damage {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.damage-buttons {
+  text-align: center;
+}
+
+.apply-damage {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.apply-damage:hover {
+  background: linear-gradient(135deg, #b91c1c, #991b1b);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.apply-damage:disabled {
+  background: #9ca3af !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.damage-results {
+  border: 1px solid #059669;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 5px 0;
+  background: rgba(5, 150, 105, 0.1);
+}
+
+.damage-results h4 {
+  margin-top: 0;
+  color: #059669;
+  border-bottom: 1px solid #059669;
+  padding-bottom: 5px;
 }

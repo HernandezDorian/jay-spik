@@ -50,6 +50,10 @@
             >
               <i class="fas fa-dice-d20"></i>
               {{item.system.damageFormula}}
+              {{#if item.system.armorPiercing}}<span
+                  class="armor-piercing-indicator"
+                  title="Perce-Armure"
+                >🗲</span>{{/if}}
             </button>
           {{/if}}
           <a
