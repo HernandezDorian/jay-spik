@@ -288,3 +288,101 @@ if (!game.user.isGM && !actor.testUserPermission(game.user, "OWNER")) {
    - Surveillance des erreurs
 
 Cette solution devrait **éliminer complètement** les erreurs de permissions dans la console des joueurs.
+
+## 🔄 PROBLÈME MULTI-UTILISATEURS IDENTIFIÉ
+
+### Cause racine découverte
+
+Le hook `updateActor` se déclenche sur **TOUS les clients connectés** (GM + joueurs), mais notre code initial ne vérifiait pas les permissions avant d'essayer de traiter le changement.
+
+**Séquence problématique :**
+
+1. Joueur A change un statut → `actor.update()`
+2. Hook `updateActor` se déclenche chez **TOUT LE MONDE**
+3. Joueur B (sans permissions) essaie d'exécuter `updateStatusSimple()`
+4. → Erreur de permissions + tentative de création d'effet
+5. = Doublons et erreurs pour les autres joueurs
+
+### Solution appliquée
+
+#### 1. Protection dans le hook `updateActor`
+
+```javascript
+// PROTECTION : Seuls le GM ou le propriétaire traitent le changement
+const canProcess =
+  game.user.isGM || actor.testUserPermission(game.user, "OWNER");
+
+if (!canProcess) {
+  console.log(`Utilisateur ignore le changement (pas de permissions)`);
+  return; // Sortir sans traiter
+}
+```
+
+#### 2. Éviter les appels multiples via socket
+
+```javascript
+// PROTECTION : Éviter les appels multiples si déjà traité par socket
+if (options?.jaySpikSocketProcessed) {
+  console.log("Changement déjà traité par socket, ignoré");
+  return;
+}
+```
+
+#### 3. Marquage des updates via socket
+
+```javascript
+// Le GM marque les updates pour éviter le re-déclenchement
+actor.update(
+  {
+    "system.status": data.newStatus,
+  },
+  {
+    jaySpikSocketProcessed: true,
+  }
+);
+```
+
+### Script de diagnostic : `DIAGNOSTIC-MULTI-USERS.js`
+
+**Fonctionnalités :**
+
+- Surveillance de TOUS les hooks `updateActor`
+- Affichage de quel client traite quoi
+- Matrice des permissions par acteur
+- Test de changements avec analyse détaillée
+- Nettoyage d'urgence global
+
+**Utilisation :**
+
+```javascript
+// Voir qui peut traiter quoi
+window.showPermissionsMatrix();
+
+// Tester un changement avec analyse complète
+window.testMultiUserChange("NomActeur", "defensive");
+
+// Nettoyage d'urgence si doublons
+window.emergencyCleanupAll();
+```
+
+### Résultats attendus après correction
+
+**Logs normaux :**
+
+```
+👤 Utilisateur PlayerA ignore le changement (pas de permissions)
+👑 Utilisateur GM traite le changement
+✅ OK - 1 effet comme attendu
+```
+
+**Plus d'erreurs :**
+
+- ❌ `User X lacks permission to create/delete ActiveEffect`
+- ❌ Doublons d'effets
+- ❌ Erreurs dans la console des joueurs
+
+**Comportement correct :**
+
+- Seul 1 client traite chaque changement (GM ou propriétaire)
+- Communication transparente via socket si nécessaire
+- Maximum 1 effet de statut par acteur à tout moment
