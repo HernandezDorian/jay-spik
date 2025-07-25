@@ -593,6 +593,7 @@ async function createStatusActiveEffect(actor, statusKey) {
   const effectData = {
     name: statusConfig.label,
     icon: convertFontAwesomeToPath(statusConfig.icon),
+    description: statusConfig.description, // Description visible pour les joueurs
     changes: [], // Pas de changement de stats - effet purement visuel
     flags: {
       jaySpik: {
