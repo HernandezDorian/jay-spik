@@ -154,6 +154,12 @@ export class JaySpikActorSheet extends ActorSheet {
     if (!context.system.skills) {
       context.system.skills = [];
     }
+
+    // Préparer les données du jet personnalisé (depuis les flags)
+    context.customRoll = {
+      stat: this.actor.getFlag("jay-spik", "customRoll.stat") || "physique",
+      bonus: this.actor.getFlag("jay-spik", "customRoll.bonus") || 0,
+    };
   }
 
   /**
@@ -336,6 +342,21 @@ export class JaySpikActorSheet extends ActorSheet {
     html.on("click", ".add-skill", this._onAddSkill.bind(this));
     html.on("click", ".skill-delete", this._onDeleteSkill.bind(this));
     html.on("click", ".skill-roll", this._onSkillRoll.bind(this));
+
+    // Custom roll
+    html.on("click", ".custom-roll", this._onCustomRoll.bind(this));
+
+    // Custom roll value persistence
+    html.on(
+      "change",
+      "#custom-roll-stat",
+      this._onCustomRollStatChange.bind(this)
+    );
+    html.on(
+      "change",
+      "#custom-roll-bonus",
+      this._onCustomRollBonusChange.bind(this)
+    );
 
     // Active Effect management
     html.on("click", ".effect-control", (ev) => {
@@ -977,5 +998,205 @@ export class JaySpikActorSheet extends ActorSheet {
 
     // Effectuer le jet de compétence
     await this.actor.system.rollSkill(skillId);
+  }
+
+  /**
+   * Handle custom roll
+   * @param {Event} event   The originating click event
+   * @private
+   */
+  async _onCustomRoll(event) {
+    event.preventDefault();
+
+    // Récupérer les valeurs du formulaire
+    const form = event.currentTarget.closest(".custom-roll-section");
+    const statSelect = form.querySelector("#custom-roll-stat");
+    const bonusInput = form.querySelector("#custom-roll-bonus");
+
+    const selectedStat = statSelect.value;
+    const bonus = parseInt(bonusInput.value) || 0;
+
+    // Vérifier que la stat existe
+    if (!selectedStat || !this.actor.system.abilities[selectedStat]) {
+      ui.notifications.error("Caractéristique non valide");
+      return;
+    }
+
+    // Récupérer la valeur de base de la stat (avec bonus d'équipement si applicable)
+    const baseValue = this.actor.system.abilities[selectedStat].value || 0;
+    const modifiedValue = this.actor.system.getStatBonus
+      ? this.actor.system.getStatBonus(selectedStat, baseValue)
+      : baseValue;
+
+    // Calculer le seuil de réussite
+    const threshold = modifiedValue + bonus;
+
+    // Effectuer le jet de dé
+    const roll = new Roll("1d100");
+    await roll.evaluate();
+
+    // Déterminer le résultat
+    const isSuccess = roll.total <= threshold;
+    const margin = threshold - roll.total;
+
+    // Récupérer le nom de la stat depuis la config
+    const statLabel = CONFIG.JAY_SPIK.abilities[selectedStat] || selectedStat;
+
+    // Préparer le message de chat
+    const messageData = {
+      speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+      flavor: `Jet personnalisé`,
+      content: `
+        <div class="custom-roll-result">
+          <h3>Jet personnalisé</h3>
+          <div class="roll-details">
+            <p><strong>Caractéristique:</strong> ${statLabel} (${baseValue}${
+        modifiedValue !== baseValue ? ` → ${modifiedValue}` : ""
+      })</p>
+            ${
+              bonus !== 0
+                ? `<p><strong>Modification:</strong> ${
+                    bonus >= 0 ? "+" : ""
+                  }${bonus}</p>`
+                : ""
+            }
+            <p><strong>Seuil de réussite:</strong> ${threshold}</p>
+            <p><strong>Résultat du dé:</strong> ${roll.total}</p>
+            <p class="result ${isSuccess ? "success" : "failure"}">
+              <strong>${isSuccess ? "RÉUSSITE" : "ÉCHEC"}</strong>
+              ${
+                isSuccess
+                  ? `(marge: ${margin})`
+                  : `(échec de ${Math.abs(margin)})`
+              }
+            </p>
+          </div>
+        </div>
+      `,
+      rolls: [roll],
+    };
+
+    // Envoyer le message
+    await ChatMessage.create(messageData);
+
+    // Log pour debug
+    console.log(
+      `Jet personnalisé - ${statLabel}: ${roll.total} vs ${threshold} = ${
+        isSuccess ? "Réussite" : "Échec"
+      }`
+    );
+  }
+
+  /**
+   * Handle custom roll stat selection change
+   * @param {Event} event   The originating change event
+   * @private
+   */
+  async _onCustomRollStatChange(event) {
+    event.preventDefault();
+    const selectedStat = event.currentTarget.value;
+
+    // Sauvegarder la valeur dans les flags de l'acteur
+    await this.actor.setFlag("jay-spik", "customRoll.stat", selectedStat);
+  }
+
+  /**
+   * Handle custom roll bonus change
+   * @param {Event} event   The originating change event
+   * @private
+   */
+  async _onCustomRollBonusChange(event) {
+    event.preventDefault();
+    const bonus = parseInt(event.currentTarget.value) || 0;
+
+    // Sauvegarder la valeur dans les flags de l'acteur
+    await this.actor.setFlag("jay-spik", "customRoll.bonus", bonus);
+  }
+
+  /**
+   * Handle custom roll
+   * @param {Event} event   The originating click event
+   * @private
+   */
+  async _onCustomRoll(event) {
+    event.preventDefault();
+
+    // Récupérer les valeurs du formulaire
+    const form = event.currentTarget.closest(".custom-roll-section");
+    const statSelect = form.querySelector("#custom-roll-stat");
+    const bonusInput = form.querySelector("#custom-roll-bonus");
+
+    const selectedStat = statSelect.value;
+    const bonus = parseInt(bonusInput.value) || 0;
+
+    // Vérifier que la stat existe
+    if (!selectedStat || !this.actor.system.abilities[selectedStat]) {
+      ui.notifications.error("Caractéristique non valide");
+      return;
+    }
+
+    // Récupérer la valeur de base de la stat (avec bonus d'équipement si applicable)
+    const baseValue = this.actor.system.abilities[selectedStat].value || 0;
+    const modifiedValue = this.actor.system.getStatBonus
+      ? this.actor.system.getStatBonus(selectedStat, baseValue)
+      : baseValue;
+
+    // Calculer le seuil de réussite
+    const threshold = modifiedValue + bonus;
+
+    // Effectuer le jet de dé
+    const roll = new Roll("1d100");
+    await roll.evaluate();
+
+    // Déterminer le résultat
+    const isSuccess = roll.total <= threshold;
+    const margin = threshold - roll.total;
+
+    // Récupérer le nom de la stat depuis la config
+    const statLabel = CONFIG.JAY_SPIK.abilities[selectedStat] || selectedStat;
+
+    // Préparer le message de chat
+    const messageData = {
+      speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+      flavor: `Jet personnalisé`,
+      content: `
+        <div class="custom-roll-result">
+          <h3>Jet personnalisé</h3>
+          <div class="roll-details">
+            <p><strong>Caractéristique:</strong> ${statLabel} (${baseValue}${
+        modifiedValue !== baseValue ? ` → ${modifiedValue}` : ""
+      })</p>
+            ${
+              bonus !== 0
+                ? `<p><strong>Modification:</strong> ${
+                    bonus >= 0 ? "+" : ""
+                  }${bonus}</p>`
+                : ""
+            }
+            <p><strong>Seuil de réussite:</strong> ${threshold}</p>
+            <p><strong>Résultat du dé:</strong> ${roll.total}</p>
+            <p class="result ${isSuccess ? "success" : "failure"}">
+              <strong>${isSuccess ? "RÉUSSITE" : "ÉCHEC"}</strong>
+              ${
+                isSuccess
+                  ? `(marge: ${margin})`
+                  : `(échec de ${Math.abs(margin)})`
+              }
+            </p>
+          </div>
+        </div>
+      `,
+      rolls: [roll],
+    };
+
+    // Envoyer le message
+    await ChatMessage.create(messageData);
+
+    // Log pour debug
+    console.log(
+      `Jet personnalisé - ${statLabel}: ${roll.total} vs ${threshold} = ${
+        isSuccess ? "Réussite" : "Échec"
+      }`
+    );
   }
 }

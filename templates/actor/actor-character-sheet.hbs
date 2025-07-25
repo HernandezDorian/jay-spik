@@ -85,6 +85,32 @@
 
         {{!-- For the main features list, span the right two columns --}}
         <section class="main grid-span-2">
+          {{!-- Section de jet personnalisé --}}
+          <section class="custom-roll-section">
+            <header class="custom-roll-header">
+              <h3>Jet personnalisé</h3>
+            </header>
+            <div class="custom-roll-form flexrow">
+              <div class="custom-roll-stat flex-group-center">
+                <label for="custom-roll-stat">Caractéristique:</label>
+                <select name="custom-roll-stat" id="custom-roll-stat">
+                  {{#each system.abilities as |ability key|}}
+                    <option value="{{key}}" {{#if (eq key @root.customRoll.stat)}}selected{{/if}}>{{lookup @root.config.abilities key}}</option>
+                  {{/each}}
+                </select>
+              </div>
+              <div class="custom-roll-bonus flex-group-center">
+                <label for="custom-roll-bonus">Bonus/Malus:</label>
+                <input type="number" name="custom-roll-bonus" id="custom-roll-bonus" value="{{customRoll.bonus}}" min="-100" max="100" data-dtype="Number"/>
+              </div>
+              <div class="custom-roll-button flex-group-center">
+                <button type="button" class="custom-roll rollable" title="Effectuer un jet personnalisé">
+                  <i class="fas fa-dice-d20"></i> Lancer
+                </button>
+              </div>
+            </div>
+          </section>
+
           {{!-- This is a Handlebars partial. They're stored in the `/parts` folder next to this sheet, and defined in module/helpers/templates.mjs --}}
           {{> "systems/jay-spik/templates/actor/parts/actor-features.hbs"}}
         </section>

@@ -859,3 +859,167 @@ input[name="system.power.value"] {
   color: #dc3545;
   border: 1px solid #dc3545;
 }
+
+/* ========================================= */
+/* STYLES POUR LE JET PERSONNALISÉ          */
+/* ========================================= */
+
+.custom-roll-section {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: rgba(0, 123, 255, 0.05);
+  border: 1px solid rgba(0, 123, 255, 0.2);
+  border-radius: 8px;
+}
+
+.custom-roll-header {
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.custom-roll-header h3 {
+  margin: 0;
+  font-size: 1.2em;
+  color: #007bff;
+  font-weight: bold;
+}
+
+.custom-roll-form {
+  display: flex;
+  gap: 15px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+#custom-roll-stat {
+  padding: 2px;
+}
+
+.custom-roll-stat,
+.custom-roll-bonus,
+.custom-roll-button {
+  flex: 1;
+  min-width: 120px;
+}
+
+.custom-roll-stat label,
+.custom-roll-bonus label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
+  font-size: 0.9em;
+}
+
+.custom-roll-stat select,
+.custom-roll-bonus input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 0.9em;
+  background: white;
+}
+
+.custom-roll-stat select:focus,
+.custom-roll-bonus input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+.custom-roll-button {
+  flex: 0 0 auto;
+}
+
+.custom-roll {
+  background: linear-gradient(145deg, #007bff, #0056b3);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: bold;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+  width: 100%;
+}
+
+.custom-roll:hover {
+  background: linear-gradient(145deg, #0056b3, #004085);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.4);
+}
+
+.custom-roll:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+}
+
+.custom-roll i {
+  margin-right: 5px;
+}
+
+/* Responsive pour petits écrans */
+@media (max-width: 600px) {
+  .custom-roll-form {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .custom-roll-stat,
+  .custom-roll-bonus,
+  .custom-roll-button {
+    flex: none;
+    width: 100%;
+  }
+}
+
+/* ========================================= */
+/* STYLES POUR LES RÉSULTATS DE JETS CHAT   */
+/* ========================================= */
+
+.custom-roll-result {
+  border: 1px solid #007bff;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 5px 0;
+  background: rgba(0, 123, 255, 0.05);
+}
+
+.custom-roll-result h3 {
+  margin: 0 0 10px 0;
+  color: #007bff;
+  font-size: 1.1em;
+  border-bottom: 1px solid rgba(0, 123, 255, 0.3);
+  padding-bottom: 5px;
+  text-align: center;
+}
+
+.custom-roll-result .roll-details p {
+  margin: 5px 0;
+  font-size: 0.9em;
+}
+
+.custom-roll-result .result {
+  font-size: 1.1em;
+  font-weight: bold;
+  padding: 8px;
+  border-radius: 4px;
+  text-align: center;
+  margin: 10px 0;
+}
+
+.custom-roll-result .result.success {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+  border: 1px solid #28a745;
+}
+
+.custom-roll-result .result.failure {
+  background: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+  border: 1px solid #dc3545;
+}
