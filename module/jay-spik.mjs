@@ -139,32 +139,11 @@ Handlebars.registerHelper("eq", function (a, b) {
 Hooks.once("ready", function () {
   console.log("🚨 JaySpik | Mode d'urgence activé");
 
-  // Initialiser le système de socket pour communication GM/Joueurs
-  game.socket.on("system.jay-spik", (data) => {
-    // Seul le GM peut traiter les demandes de changement de statut
-    if (!game.user.isGM) return;
-
-    console.log(
-      `JaySpik: [GM] Réception demande socket de ${data.userName}:`,
-      data
-    );
-
-    if (data.action === "updateStatus") {
-      const actor = game.actors.get(data.actorId);
-      if (actor) {
-        console.log(
-          `JaySpik: [GM] Traite demande pour ${actor.name} -> ${data.newStatus}`
-        );
-        updateStatusSimple(actor, data.newStatus);
-      }
-    }
-  });
-
   // Hook simple pour les statuts (sans système de queue pour l'instant)
   Hooks.on("updateActor", (actor, changes, options, userId) => {
     if (changes.system?.status !== undefined) {
       console.log(
-        `JaySpik: Changement statut ${actor.name} -> ${changes.system.status} (user: ${userId})`
+        `JaySpik: Changement statut ${actor.name} -> ${changes.system.status}`
       );
 
       // Version ultra-simple : supprimer tous les anciens effets, créer le nouveau
@@ -181,28 +160,6 @@ Hooks.once("ready", function () {
 
 async function updateStatusSimple(actor, newStatus) {
   console.log(`JaySpik: [SIMPLE] Mise à jour ${actor.name} -> ${newStatus}`);
-
-  // VÉRIFICATION PERMISSIONS : Seuls le GM et le propriétaire peuvent modifier les effets
-  if (!game.user.isGM && !actor.testUserPermission(game.user, "OWNER")) {
-    console.log(
-      "JaySpik: Utilisateur non autorisé à modifier les effets de cet acteur, délégation au GM"
-    );
-
-    // Si on n'est pas GM et pas propriétaire, demander au GM de faire le changement
-    if (game.users.some((u) => u.isGM && u.active)) {
-      game.socket.emit("system.jay-spik", {
-        action: "updateStatus",
-        actorId: actor.id,
-        newStatus: newStatus,
-        userId: game.user.id,
-        userName: game.user.name,
-      });
-      console.log("JaySpik: Demande envoyée au GM");
-    } else {
-      ui.notifications.warn("Aucun GM connecté pour traiter cette demande");
-    }
-    return;
-  }
 
   try {
     // Supprimer tous les effets de statut existants
