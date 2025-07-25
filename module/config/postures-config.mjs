@@ -22,41 +22,45 @@ export const POSTURES_CONFIG = {
   offensive: {
     label: "Offensif",
     description:
-      "Posture offensive - Augmente les dégâts mais réduit la défense",
+      "La posture offensive permet à un personnage d'infliger automatiquement le maximum de dégâts possibles, sans avoir à jeter de dé. En revanche, toute possibilité de défense est annulée. De plus, les valeurs de critiques augmentent de +5 points. Ce qui signifie que les réussites critiques passent à 1 - 10 inclus et que les échecs critiques passent à 91 - 100 inclus.",
     icon: "fas fa-sword", // Icône FontAwesome de fallback
     localIcon: "systems/jay-spik/assets/postures/offensive.png", // Votre icône locale
     color: "#ff4444",
     effects: {
       // Exemple d'effets - à ajuster selon vos besoins
-      damage: 10,
-      defense: -5,
+      //   damage: 10,
+      //   defense: -5,
     },
   },
 
   defensive: {
     label: "Défensif",
     description:
-      "Posture défensive - Augmente la défense mais réduit les dégâts",
+      "La posture défensive permet à l'utilisateur de répondre à une attaque réussie par une action de défense, comme une parade ou une esquive, annulant les dégâts. En revanche, l'utilisateur doit jeter des dés pour déterminer les dégâts qu'il provoque en cas d'attaque. L'esquive n'est normalement pas active contre une attaque magique mais, pour ne pas la réduire à une attaque à 'dégâts automatique', le joueur en posture défensive peut esquiver les attaques magiques sur une réussite critique.",
     icon: "fas fa-shield-alt", // Icône FontAwesome de fallback
     localIcon: "systems/jay-spik/assets/postures/defensive.png", // Votre icône locale
     color: "#4444ff",
     effects: {
       // Exemple d'effets - à ajuster selon vos besoins
-      damage: -5,
-      defense: 10,
+      //   damage: -5,
+      //   defense: 10,
     },
   },
 
   concentration: {
     label: "Concentration",
-    description: "Posture de concentration - Améliore la magie et la précision",
+    description:
+      "La posture de focus réduit le nombre de points de mana nécessaires pour utiliser la magie et octroie un bonus de 5% aux jets de dés. On ne peut cependant pas esquiver.",
     icon: "fas fa-eye", // Icône FontAwesome de fallback
     localIcon: "systems/jay-spik/assets/postures/concentration.png", // Votre icône locale
     color: "#9944ff",
     effects: {
       // Exemple d'effets - à ajuster selon vos besoins
-      mental: 10,
-      spellPower: 15,
+      //   mental: 10,
+      //   spellPower: 15,
+      mental: 5,
+      physique: 5,
+      social: 5,
     },
   },
 };
