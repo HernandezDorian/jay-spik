@@ -555,7 +555,9 @@ export default class JaySpikCharacter extends JaySpikActorBase {
    * @param {string} postureKey - La clé de la posture
    */
   async createPostureEffect(postureKey) {
-    const { getPostureConfig } = await import("../config/postures-config.mjs");
+    const { getPostureConfig, getPostureIcon } = await import(
+      "../config/postures-config.mjs"
+    );
     const postureConfig = getPostureConfig(postureKey);
 
     if (!postureConfig) {
@@ -575,21 +577,12 @@ export default class JaySpikCharacter extends JaySpikActorBase {
       await this.removePostureEffect();
     }
 
-    // Mapper les icônes FontAwesome vers des icônes Foundry compatibles
-    const iconMap = {
-      "fas fa-sword": "icons/weapons/swords/sword-broad-blue.webp",
-      "fas fa-shield-alt":
-        "icons/equipment/shield/shield-round-boss-steel.webp",
-      "fas fa-eye":
-        "icons/magic/perception/eye-ringed-glow-angry-large-red.webp",
-      "fas fa-circle": "icons/sundries/misc/button-circle-steel.webp",
-    };
+    // Obtenir l'icône appropriée (locale en priorité, sinon Foundry par défaut)
+    const iconPath = await getPostureIcon(postureKey);
 
     const effectData = {
       name: `Posture: ${postureConfig.label}`,
-      img:
-        iconMap[postureConfig.icon] ||
-        "icons/sundries/misc/button-circle-steel.webp",
+      img: iconPath, // Utilise l'icône obtenue via getPostureIcon
       disabled: false,
       duration: {
         seconds: null, // Durée indéterminée

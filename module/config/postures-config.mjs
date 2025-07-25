@@ -13,7 +13,8 @@ export const POSTURES_CONFIG = {
   none: {
     label: "Aucun",
     description: "Aucune posture active",
-    icon: "fas fa-circle",
+    icon: "fas fa-circle", // Icône FontAwesome de fallback
+    localIcon: "systems/jay-spik/assets/postures/none.webp", // Votre icône locale
     color: "#666666",
     isDefault: true,
   },
@@ -22,7 +23,8 @@ export const POSTURES_CONFIG = {
     label: "Offensif",
     description:
       "Posture offensive - Augmente les dégâts mais réduit la défense",
-    icon: "fas fa-sword",
+    icon: "fas fa-sword", // Icône FontAwesome de fallback
+    localIcon: "systems/jay-spik/assets/postures/offensive.png", // Votre icône locale
     color: "#ff4444",
     effects: {
       // Exemple d'effets - à ajuster selon vos besoins
@@ -35,7 +37,8 @@ export const POSTURES_CONFIG = {
     label: "Défensif",
     description:
       "Posture défensive - Augmente la défense mais réduit les dégâts",
-    icon: "fas fa-shield-alt",
+    icon: "fas fa-shield-alt", // Icône FontAwesome de fallback
+    localIcon: "systems/jay-spik/assets/postures/defensive.png", // Votre icône locale
     color: "#4444ff",
     effects: {
       // Exemple d'effets - à ajuster selon vos besoins
@@ -47,7 +50,8 @@ export const POSTURES_CONFIG = {
   concentration: {
     label: "Concentration",
     description: "Posture de concentration - Améliore la magie et la précision",
-    icon: "fas fa-eye",
+    icon: "fas fa-eye", // Icône FontAwesome de fallback
+    localIcon: "systems/jay-spik/assets/postures/concentration.png", // Votre icône locale
     color: "#9944ff",
     effects: {
       // Exemple d'effets - à ajuster selon vos besoins
@@ -64,6 +68,32 @@ export const POSTURES_CONFIG = {
  */
 export function getPostureConfig(postureKey) {
   return POSTURES_CONFIG[postureKey] || null;
+}
+
+/**
+ * Obtient le chemin de l'icône à utiliser pour une posture
+ * Préfère l'icône locale si elle existe, sinon utilise l'icône FontAwesome
+ * @param {string} postureKey - La clé de la posture
+ * @returns {string} Le chemin de l'icône à utiliser
+ */
+export function getPostureIcon(postureKey) {
+  const config = getPostureConfig(postureKey);
+  if (!config) return "icons/sundries/misc/button-circle-steel.webp";
+
+  // Si une icône locale est définie, l'utiliser en priorité
+  if (config.localIcon) {
+    return config.localIcon;
+  }
+
+  // Sinon, mapper l'icône FontAwesome vers une icône Foundry
+  const iconMap = {
+    "fas fa-sword": "icons/weapons/swords/sword-broad-blue.webp",
+    "fas fa-shield-alt": "icons/equipment/shield/shield-round-boss-steel.webp",
+    "fas fa-eye": "icons/magic/perception/eye-ringed-glow-angry-large-red.webp",
+    "fas fa-circle": "icons/sundries/misc/button-circle-steel.webp",
+  };
+
+  return iconMap[config.icon] || "icons/sundries/misc/button-circle-steel.webp";
 }
 
 /**
