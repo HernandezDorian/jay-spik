@@ -1,9 +1,8 @@
 // ===============================================
-// JAY-SPIK SYSTEM - VERSION ULTRA SIMPLE
-// Juste: supprimer anciens effets + créer nouveau
+// RESTAURATION D'URGENCE - JAY-SPIK.MJS
 // ===============================================
 
-console.log("🎯 JAY-SPIK | Version ultra-simple");
+console.log("🚨 APPLICATION RESTAURATION D'URGENCE");
 
 // Import document classes.
 import { JaySpikActor } from "./documents/actor.mjs";
@@ -19,48 +18,87 @@ import { DamageManager } from "./helpers/damage-manager.mjs";
 import * as models from "./data/_module.mjs";
 
 /* -------------------------------------------- */
-/*  Icônes des Postures                         */
+/*  Utility Functions                           */
 /* -------------------------------------------- */
 
-const POSTURE_ICONS = {
-  none: null,
-  defensive: "icons/svg/shield.svg",
-  aggressive: "icons/svg/sword.svg",
-  focused: "systems/jay-spik/icons/brain-illustration-12-svgrepo-com.svg",
-};
+/**
+ * Convertit une icône FontAwesome en chemin d'image utilisable par FoundryVTT
+ */
+function convertFontAwesomeToPath(fontAwesomeClass) {
+  const iconMapping = {
+    "fas fa-shield-alt": "icons/svg/shield.svg",
+    "fas fa-sword": "icons/svg/sword.svg",
+    "fas fa-brain": "icons/svg/eye.svg",
+    "fas fa-user-ninja": "icons/svg/mystery-man.svg",
+    "fas fa-fire": "icons/svg/fire.svg",
+    "fas fa-bolt": "icons/svg/lightning.svg",
+    "fas fa-leaf": "icons/svg/oak.svg",
+    "fas fa-snowflake": "icons/svg/ice-aura.svg",
+    "fas fa-heart": "icons/svg/heal.svg",
+    "fas fa-skull": "icons/svg/poison.svg",
+    "fas fa-fist-raised": "icons/svg/combat.svg",
+    "fas fa-running": "icons/svg/wing.svg",
+    "perso fa-mon-focus":
+      "systems/jay-spik/icons/brain-illustration-12-svgrepo-com.svg",
+  };
+
+  return iconMapping[fontAwesomeClass] || "icons/svg/aura.svg";
+}
 
 /* -------------------------------------------- */
 /*  Init Hook                                   */
 /* -------------------------------------------- */
 
 Hooks.once("init", function () {
-  console.log("🔧 JAY-SPIK | Initialisation");
+  console.log("🔧 JaySpik | Initialisation d'urgence");
 
   // Add utility classes to the global game object
   game.jayspik = {
     JaySpikActor,
     JaySpikItem,
-    DamageManager,
     rollItemMacro,
+    DamageManager,
   };
 
   // Add custom constants for configuration.
   CONFIG.JAY_SPIK = JAY_SPIK;
 
-  /**
-   * Set an initiative formula for the system
-   * @type {String}
-   */
+  // Combat initiative
   CONFIG.Combat.initiative = {
     formula: "1d20 + @abilities.dex.mod",
     decimals: 2,
   };
 
-  // Define custom Document classes
+  // Define custom Document and DataModel classes
   CONFIG.Actor.documentClass = JaySpikActor;
+  CONFIG.Actor.dataModels = {
+    character: models.JaySpikCharacter,
+    npc: models.JaySpikNPC,
+  };
   CONFIG.Item.documentClass = JaySpikItem;
-  CONFIG.Actor.dataModels = models.actor;
-  CONFIG.Item.dataModels = models.item;
+  CONFIG.Item.dataModels = {
+    item: models.JaySpikItem,
+    feature: models.JaySpikFeature,
+    spell: models.JaySpikSpell,
+    equipment: models.JaySpikEquipment,
+  };
+
+  CONFIG.ActiveEffect.legacyTransferral = false;
+
+  // Status effects (version simple pour restauration)
+  CONFIG.statusEffects = CONFIG.statusEffects || [];
+  if (JAY_SPIK.statuses) {
+    Object.entries(JAY_SPIK.statuses).forEach(([key, config]) => {
+      if (key !== "none" && config.icon) {
+        CONFIG.statusEffects.push({
+          id: `jayspik-${key}`,
+          name: config.label,
+          icon: convertFontAwesomeToPath(config.icon),
+          description: config.description,
+        });
+      }
+    });
+  }
 
   // Register sheet application classes
   Actors.unregisterSheet("core", ActorSheet);
@@ -78,16 +116,9 @@ Hooks.once("init", function () {
   return preloadHandlebarsTemplates();
 });
 
-// Handlebars helpers
-Handlebars.registerHelper("concat", function () {
-  var outStr = "";
-  for (var arg in arguments) {
-    if (typeof arguments[arg] != "object") {
-      outStr += arguments[arg];
-    }
-  }
-  return outStr;
-});
+/* -------------------------------------------- */
+/*  Handlebars Helpers                          */
+/* -------------------------------------------- */
 
 Handlebars.registerHelper("toLowerCase", function (str) {
   return str.toLowerCase();
@@ -102,64 +133,157 @@ Handlebars.registerHelper("eq", function (a, b) {
 });
 
 /* -------------------------------------------- */
-/*  Ready Hook                                  */
+/*  Ready Hook - Version simplifiée             */
 /* -------------------------------------------- */
 
 Hooks.once("ready", function () {
-  console.log("🎯 JAY-SPIK | Système de postures activé");
+  console.log("🚨 JaySpik | Mode d'urgence activé");
+
+  // Initialiser le système de socket pour communication GM/Joueurs
+  game.socket.on("system.jay-spik", (data) => {
+    // Seul le GM peut traiter les demandes de changement de statut
+    if (!game.user.isGM) return;
+
+    console.log(
+      `JaySpik: [GM] Réception demande socket de ${data.userName}:`,
+      data
+    );
+
+    if (data.action === "updateStatus") {
+      const actor = game.actors.get(data.actorId);
+      if (actor) {
+        console.log(
+          `JaySpik: [GM] Traite demande pour ${actor.name} -> ${data.newStatus}`
+        );
+
+        // Marquer l'update pour éviter que le hook updateActor se redéclenche
+        actor.update(
+          {
+            "system.status": data.newStatus,
+          },
+          {
+            jaySpikSocketProcessed: true,
+          }
+        );
+      }
+    }
+  });
+
+  // Hook simple pour les statuts avec protection permissions
+  Hooks.on("updateActor", (actor, changes, options, userId) => {
+    if (changes.system?.status !== undefined) {
+      console.log(
+        `JaySpik: Changement statut ${actor.name} -> ${changes.system.status} (user: ${userId})`
+      );
+
+      // PROTECTION : Seuls le GM ou le propriétaire traitent le changement
+      const canProcess =
+        game.user.isGM || actor.testUserPermission(game.user, "OWNER");
+
+      if (!canProcess) {
+        console.log(
+          `JaySpik: Utilisateur ${game.user.name} ignore le changement (pas de permissions)`
+        );
+        return; // Sortir sans traiter
+      }
+
+      // PROTECTION SUPPLÉMENTAIRE : Éviter les appels multiples si déjà traité par socket
+      if (options?.jaySpikSocketProcessed) {
+        console.log("JaySpik: Changement déjà traité par socket, ignoré");
+        return;
+      }
+
+      console.log(`JaySpik: ${game.user.name} traite le changement`);
+
+      // Traiter le changement avec un petit délai
+      setTimeout(() => {
+        updateStatusSimple(actor, changes.system.status);
+      }, 100);
+    }
+  });
 });
 
 /* -------------------------------------------- */
-/*  Hook ULTRA-SIMPLE pour les postures         */
+/*  Status Management - Version simple          */
 /* -------------------------------------------- */
 
-Hooks.on("updateActor", async (actor, changes, options, userId) => {
-  // Seulement si le statut a changé
-  if (!changes.system?.status) return;
+async function updateStatusSimple(actor, newStatus) {
+  console.log(`JaySpik: [SIMPLE] Mise à jour ${actor.name} -> ${newStatus}`);
 
-  // Éviter les appels multiples du même utilisateur
-  if (options?.skipJaySpikHook) return;
+  // VÉRIFICATION PERMISSIONS : Seuls le GM et le propriétaire peuvent modifier les effets
+  if (!game.user.isGM && !actor.testUserPermission(game.user, "OWNER")) {
+    console.log(
+      "JaySpik: Utilisateur non autorisé à modifier les effets de cet acteur, délégation au GM"
+    );
 
-  console.log(
-    `JAY-SPIK: ${actor.name} change de posture -> ${changes.system.status}`
-  );
+    // Si on n'est pas GM et pas propriétaire, demander au GM de faire le changement
+    if (game.users.some((u) => u.isGM && u.active)) {
+      game.socket.emit("system.jay-spik", {
+        action: "updateStatus",
+        actorId: actor.id,
+        newStatus: newStatus,
+        userId: game.user.id,
+        userName: game.user.name,
+      });
+      console.log("JaySpik: Demande envoyée au GM");
+    } else {
+      ui.notifications.warn("Aucun GM connecté pour traiter cette demande");
+    }
+    return;
+  }
 
   try {
-    // ÉTAPE 1: SUPPRIMER TOUS LES ANCIENS EFFETS DE POSTURE
-    const oldEffects = actor.effects.filter((e) => e.flags?.jaySpik?.isPosture);
-    if (oldEffects.length > 0) {
-      await actor.deleteEmbeddedDocuments(
-        "ActiveEffect",
-        oldEffects.map((e) => e.id)
-      );
-      console.log(`JAY-SPIK: Supprimé ${oldEffects.length} ancien(s) effet(s)`);
+    // Supprimer tous les effets de statut existants
+    const statusEffects = actor.effects.filter((effect) => {
+      try {
+        return (
+          effect.flags?.jaySpik?.isStatusEffect ||
+          (Array.isArray(effect.statuses) &&
+            effect.statuses.some((s) => s.startsWith("jayspik-")))
+        );
+      } catch (e) {
+        return false;
+      }
+    });
+
+    if (statusEffects.length > 0) {
+      const effectIds = statusEffects.map((e) => e.id);
+      await actor.deleteEmbeddedDocuments("ActiveEffect", effectIds);
+      console.log(`JaySpik: Supprimé ${effectIds.length} effet(s)`);
     }
 
-    // ÉTAPE 2: CRÉER LE NOUVEL EFFET SI BESOIN
-    const newPosture = changes.system.status;
-    if (newPosture && newPosture !== "none" && POSTURE_ICONS[newPosture]) {
-      const config = JAY_SPIK.statuses?.[newPosture];
-      if (config) {
+    // Créer le nouveau si nécessaire
+    if (newStatus && newStatus !== "none") {
+      const statusConfig = CONFIG.JAY_SPIK?.statuses?.[newStatus];
+      if (statusConfig) {
         const effectData = {
-          name: config.label,
-          icon: POSTURE_ICONS[newPosture],
-          description: config.description,
+          name: statusConfig.label,
+          icon: convertFontAwesomeToPath(statusConfig.icon),
+          description: statusConfig.description,
           changes: [],
+          flags: {
+            jaySpik: {
+              isStatusEffect: true,
+              statusKey: newStatus,
+            },
+            core: {
+              statusId: `jayspik-${newStatus}`,
+            },
+          },
           disabled: false,
           transfer: true,
-          flags: {
-            jaySpik: { isPosture: true },
-          },
+          origin: actor.uuid,
+          statuses: [`jayspik-${newStatus}`],
         };
 
         await actor.createEmbeddedDocuments("ActiveEffect", [effectData]);
-        console.log(`JAY-SPIK: Créé effet ${config.label}`);
+        console.log(`JaySpik: Créé effet ${newStatus}`);
       }
     }
   } catch (error) {
-    console.error("JAY-SPIK: Erreur:", error);
+    console.error("JaySpik: Erreur simple:", error);
   }
-});
+}
 
 /* -------------------------------------------- */
 /*  Hotbar Macros                               */
@@ -215,4 +339,4 @@ globalThis.rollItemMacro = rollItemMacro;
 
 Hooks.once("hotbarDrop", (bar, data, slot) => createItemMacro(data, slot));
 
-console.log("✅ JAY-SPIK | Version ultra-simple chargée");
+console.log("✅ JaySpik | Restauration d'urgence chargée");
