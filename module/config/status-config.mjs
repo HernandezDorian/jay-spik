@@ -23,25 +23,22 @@ export const STATUS_CONFIG = {
 
   // Statuts disponibles
   defensive: {
-    label: "Défensive",
-    description:
-      "La posture défensive permet à l'utilisateur de répondre à une attaque réussie par une action de défense, comme une parade ou une esquive, annulant les dégâts. En revanche, l'utilisateur doit jeter des dés pour déterminer les dégâts qu'il provoque en cas d'attaque. L'esquive n'est normalement pas active contre une attaque magique mais, pour ne pas la réduire à une attaque à 'dégâts automatique', le joueur en posture défensive peut esquiver les attaques magiques sur une réussite critique.",
+    label: "Défensif",
+    description: "Le personnage adopte une posture défensive",
     icon: "fas fa-shield-alt",
     color: "#2196f3",
   },
 
   aggressive: {
-    label: "Offensive",
-    description:
-      "La posture offensive permet à un personnage d'infliger automatiquement le maximum de dégâts possibles, sans avoir à jeter de dé. En revanche, toute possibilité de défense est annulée. De plus, les valeurs de critiques augmentent de +5 points. Ce qui signifie que les réussites critiques passent à 1 - 10 inclus et que les échecs critiques passent à 91 - 100 inclus.",
+    label: "Agressif",
+    description: "Le personnage attaque sans retenue",
     icon: "fas fa-sword",
     color: "#f44336",
   },
 
   focused: {
     label: "Concentré",
-    description:
-      "La posture de focus réduit le nombre de points de mana nécessaires pour utiliser la magie et octroie un bonus de 5% aux jets de dés. On ne peut cependant pas esquiver.",
+    description: "Le personnage se concentre profondément",
     icon: "fas fa-brain",
     color: "#9c27b0",
   },
