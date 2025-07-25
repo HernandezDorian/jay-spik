@@ -155,47 +155,19 @@ Hooks.once("ready", function () {
         console.log(
           `JaySpik: [GM] Traite demande pour ${actor.name} -> ${data.newStatus}`
         );
-
-        // Marquer l'update pour éviter que le hook updateActor se redéclenche
-        actor.update(
-          {
-            "system.status": data.newStatus,
-          },
-          {
-            jaySpikSocketProcessed: true,
-          }
-        );
+        updateStatusSimple(actor, data.newStatus);
       }
     }
   });
 
-  // Hook simple pour les statuts avec protection permissions
+  // Hook simple pour les statuts (sans système de queue pour l'instant)
   Hooks.on("updateActor", (actor, changes, options, userId) => {
     if (changes.system?.status !== undefined) {
       console.log(
         `JaySpik: Changement statut ${actor.name} -> ${changes.system.status} (user: ${userId})`
       );
 
-      // PROTECTION : Seuls le GM ou le propriétaire traitent le changement
-      const canProcess =
-        game.user.isGM || actor.testUserPermission(game.user, "OWNER");
-
-      if (!canProcess) {
-        console.log(
-          `JaySpik: Utilisateur ${game.user.name} ignore le changement (pas de permissions)`
-        );
-        return; // Sortir sans traiter
-      }
-
-      // PROTECTION SUPPLÉMENTAIRE : Éviter les appels multiples si déjà traité par socket
-      if (options?.jaySpikSocketProcessed) {
-        console.log("JaySpik: Changement déjà traité par socket, ignoré");
-        return;
-      }
-
-      console.log(`JaySpik: ${game.user.name} traite le changement`);
-
-      // Traiter le changement avec un petit délai
+      // Version ultra-simple : supprimer tous les anciens effets, créer le nouveau
       setTimeout(() => {
         updateStatusSimple(actor, changes.system.status);
       }, 100);
