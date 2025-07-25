@@ -11,10 +11,6 @@
   cursor: pointer;
 }
 
-.selectCompStat {
-  padding: 2px !important;
-}
-
 .grid,
 .grid-2col {
   display: grid;
