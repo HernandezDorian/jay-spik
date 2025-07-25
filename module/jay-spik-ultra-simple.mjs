@@ -117,47 +117,40 @@ Hooks.on("updateActor", async (actor, changes, options, userId) => {
   // Seulement si le statut a changé
   if (!changes.system?.status) return;
 
-  // Éviter les appels multiples du même utilisateur
-  if (options?.skipJaySpikHook) return;
-
   console.log(
     `JAY-SPIK: ${actor.name} change de posture -> ${changes.system.status}`
   );
 
-  try {
-    // ÉTAPE 1: SUPPRIMER TOUS LES ANCIENS EFFETS DE POSTURE
-    const oldEffects = actor.effects.filter((e) => e.flags?.jaySpik?.isPosture);
-    if (oldEffects.length > 0) {
-      await actor.deleteEmbeddedDocuments(
-        "ActiveEffect",
-        oldEffects.map((e) => e.id)
-      );
-      console.log(`JAY-SPIK: Supprimé ${oldEffects.length} ancien(s) effet(s)`);
-    }
+  // ÉTAPE 1: SUPPRIMER TOUS LES ANCIENS EFFETS DE POSTURE
+  const oldEffects = actor.effects.filter((e) => e.flags?.jaySpik?.isPosture);
+  if (oldEffects.length > 0) {
+    await actor.deleteEmbeddedDocuments(
+      "ActiveEffect",
+      oldEffects.map((e) => e.id)
+    );
+    console.log(`JAY-SPIK: Supprimé ${oldEffects.length} ancien(s) effet(s)`);
+  }
 
-    // ÉTAPE 2: CRÉER LE NOUVEL EFFET SI BESOIN
-    const newPosture = changes.system.status;
-    if (newPosture && newPosture !== "none" && POSTURE_ICONS[newPosture]) {
-      const config = JAY_SPIK.statuses?.[newPosture];
-      if (config) {
-        const effectData = {
-          name: config.label,
-          icon: POSTURE_ICONS[newPosture],
-          description: config.description,
-          changes: [],
-          disabled: false,
-          transfer: true,
-          flags: {
-            jaySpik: { isPosture: true },
-          },
-        };
+  // ÉTAPE 2: CRÉER LE NOUVEL EFFET SI BESOIN
+  const newPosture = changes.system.status;
+  if (newPosture && newPosture !== "none" && POSTURE_ICONS[newPosture]) {
+    const config = JAY_SPIK.statuses?.[newPosture];
+    if (config) {
+      const effectData = {
+        name: config.label,
+        icon: POSTURE_ICONS[newPosture],
+        description: config.description,
+        changes: [],
+        disabled: false,
+        transfer: true,
+        flags: {
+          jaySpik: { isPosture: true },
+        },
+      };
 
-        await actor.createEmbeddedDocuments("ActiveEffect", [effectData]);
-        console.log(`JAY-SPIK: Créé effet ${config.label}`);
-      }
+      await actor.createEmbeddedDocuments("ActiveEffect", [effectData]);
+      console.log(`JAY-SPIK: Créé effet ${config.label}`);
     }
-  } catch (error) {
-    console.error("JAY-SPIK: Erreur:", error);
   }
 });
 

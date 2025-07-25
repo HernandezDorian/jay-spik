@@ -146,7 +146,15 @@ export class JaySpikActorSheet extends ActorSheet {
           ability.value !== undefined
         ) {
           const baseValue = ability.value || 0;
-          const modifiedValue = this.actor.system.getStatBonus(key, baseValue);
+
+          // Utiliser la méthode getStatBonus si elle existe, sinon garder la valeur de base
+          let modifiedValue = baseValue;
+          if (
+            this.actor.system.getStatBonus &&
+            typeof this.actor.system.getStatBonus === "function"
+          ) {
+            modifiedValue = this.actor.system.getStatBonus(key, baseValue);
+          }
 
           // Créer une copie sécurisée de l'objet ability
           const abilityClone = foundry.utils.deepClone(ability);
