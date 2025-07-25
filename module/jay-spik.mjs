@@ -35,12 +35,6 @@ function convertFontAwesomeToPath(fontAwesomeClass) {
     "fas fa-skull": "icons/svg/poison.svg",
     "fas fa-fist-raised": "icons/svg/combat.svg",
     "fas fa-running": "icons/svg/wing.svg",
-    "perso fa-mon-focus":
-      "systems/jay-spik/icons/brain-illustration-12-svgrepo-com.svg",
-    // Ajoutez vos propres mappings ici si besoin :
-    // "fas fa-star": "icons/svg/star.svg",
-    // "fas fa-moon": "icons/svg/moon.svg",
-    // "fas fa-sun": "icons/svg/sun.svg",
   };
 
   const iconPath = iconMapping[fontAwesomeClass];
@@ -194,9 +188,6 @@ Hooks.once("ready", function () {
     );
   }
 
-  // Nettoyer les effets de statut en double au démarrage (AVANT l'initialisation)
-  cleanupDuplicateStatusEffects();
-
   // Initialiser les effets actifs des acteurs existants au démarrage
   game.actors.forEach((actor) => {
     if (actor.system?.status && actor.system.status !== "none") {
@@ -204,79 +195,7 @@ Hooks.once("ready", function () {
       updateStatusActiveEffect(actor, actor.system.status);
     }
   });
-
-  // Intercepteur d'erreurs pour les ActiveEffect "does not exist"
-  setupActiveEffectErrorInterceptor();
-
-  // Nettoyage périodique des doublons (toutes les 30 secondes)
-  setInterval(periodicCleanup, 30000);
 });
-
-/**
- * Intercepte et masque les erreurs "ActiveEffect does not exist" et autres erreurs de FoundryVTT
- * Ces erreurs sont normales lors de la suppression concurrente d'effets ou d'APIs dépréciées
- */
-function setupActiveEffectErrorInterceptor() {
-  // Intercepter les erreurs de console
-  const originalError = console.error;
-  console.error = function (...args) {
-    const message = args.join(" ");
-
-    // Filtrer les erreurs d'ActiveEffect qui n'existent plus
-    if (
-      message.includes("ActiveEffect") &&
-      message.includes("does not exist")
-    ) {
-      console.log(
-        `JaySpik: Erreur FoundryVTT interceptée et ignorée: ${message}`
-      );
-      return; // Ne pas afficher l'erreur
-    }
-
-    // Filtrer les erreurs de dépréciation TextEditor (au cas où il y en aurait d'autres)
-    if (
-      message.includes("TextEditor") &&
-      message.includes("namespaced under foundry.applications.ux.TextEditor")
-    ) {
-      console.log(
-        `JaySpik: Erreur de dépréciation TextEditor interceptée et ignorée`
-      );
-      return; // Ne pas afficher l'erreur
-    }
-
-    // Laisser passer toutes les autres erreurs
-    originalError.apply(console, args);
-  };
-
-  // Intercepter les erreurs non gérées
-  window.addEventListener("error", function (event) {
-    if (!event.message) return;
-
-    // ActiveEffect errors
-    if (
-      event.message.includes("ActiveEffect") &&
-      event.message.includes("does not exist")
-    ) {
-      console.log(
-        `JaySpik: Erreur JavaScript interceptée et ignorée: ${event.message}`
-      );
-      event.preventDefault();
-      return false;
-    }
-
-    // TextEditor deprecation errors
-    if (
-      event.message.includes("TextEditor") &&
-      event.message.includes("namespaced")
-    ) {
-      console.log(
-        `JaySpik: Erreur de dépréciation JavaScript interceptée et ignorée`
-      );
-      event.preventDefault();
-      return false;
-    }
-  });
-}
 
 /* -------------------------------------------- */
 /*  Hotbar Macros                               */
@@ -627,11 +546,10 @@ window.testApplyDamage = async function (actorId, damage) {
 };
 
 /* -------------------------------------------- */
+/*  Token Status Effects Management            */
+/* -------------------------------------------- */
 /*  Active Effects Status Management           */
 /* -------------------------------------------- */
-
-// Map pour éviter les appels concurrents de mise à jour des statuts
-const statusUpdateLocks = new Map();
 
 /**
  * Met à jour l'Active Effect de statut d'un acteur (comme les Temporary Effects)
@@ -639,149 +557,26 @@ const statusUpdateLocks = new Map();
  * @param {string} newStatus - Le nouveau statut ("none" pour supprimer)
  */
 async function updateStatusActiveEffect(actor, newStatus) {
-  const actorId = actor.id;
-  const lockKey = `${actorId}_${newStatus}`;
+  // Supprimer l'ancien effet de statut s'il existe
+  await removeExistingStatusEffect(actor);
 
-  // Vérifier si une mise à jour identique est déjà en cours
-  if (statusUpdateLocks.get(lockKey)) {
-    console.log(
-      `JaySpik: Mise à jour '${newStatus}' déjà en cours pour ${actor.name}, ignorée`
-    );
-    return;
-  }
-
-  // Verrouiller cette combinaison acteur/statut spécifique
-  statusUpdateLocks.set(lockKey, true);
-  statusUpdateLocks.set(actorId, true); // Verrou général aussi
-
-  try {
-    console.log(
-      `JaySpik: Début mise à jour statut '${newStatus}' pour ${actor.name}`
-    );
-
-    // Supprimer TOUS les anciens effets de statut
-    await removeExistingStatusEffectSafely(actor);
-
-    // Attendre plus longtemps pour que FoundryVTT termine complètement ses opérations
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    // Si le nouveau statut n'est pas "none", créer un nouvel Active Effect
-    if (newStatus && newStatus !== "none") {
-      // Double vérification : s'assurer qu'aucun effet identique n'existe déjà
-      await ensureNoExistingEffect(actor, newStatus);
-      await createStatusActiveEffect(actor, newStatus);
-    }
-
-    console.log(
-      `JaySpik: Fin mise à jour statut '${newStatus}' pour ${actor.name}`
-    );
-  } finally {
-    // Libérer les verrous après un délai plus long
-    setTimeout(() => {
-      statusUpdateLocks.delete(lockKey);
-      statusUpdateLocks.delete(actorId);
-    }, 300);
+  // Si le nouveau statut n'est pas "none", créer un nouvel Active Effect
+  if (newStatus && newStatus !== "none") {
+    await createStatusActiveEffect(actor, newStatus);
   }
 }
 
 /**
- * S'assure qu'aucun effet de statut identique n'existe avant création
+ * Supprime l'Active Effect de statut existant
  * @param {Actor} actor - L'acteur
- * @param {string} statusKey - La clé du statut à vérifier
  */
-async function ensureNoExistingEffect(actor, statusKey) {
-  const statusConfig = CONFIG.JAY_SPIK?.statuses?.[statusKey];
-  if (!statusConfig) return;
-
-  // Vérifier s'il existe déjà un effet avec ce statut
-  const existingEffect = actor.effects.find((effect) => {
-    try {
-      return (
-        effect.flags?.jaySpik?.statusKey === statusKey ||
-        (Array.isArray(effect.statuses) &&
-          effect.statuses.includes(`jayspik-${statusKey}`)) ||
-        effect.name === statusConfig.label
-      );
-    } catch (e) {
-      console.warn("JaySpik: Erreur lors de la vérification d'effet:", e);
-      return false;
-    }
-  });
+async function removeExistingStatusEffect(actor) {
+  const existingEffect = actor.effects.find(
+    (effect) => effect.flags?.jaySpik?.isStatusEffect
+  );
 
   if (existingEffect) {
-    console.log(
-      `JaySpik: Effet '${statusKey}' déjà présent, suppression préventive`
-    );
-    await removeEffectSilently(actor, existingEffect.id);
-
-    // Attendre un peu après la suppression préventive
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  }
-}
-
-/**
- * Version ultra-sécurisée de suppression des effets de statut
- * Ignore complètement toutes les erreurs de FoundryVTT
- * @param {Actor} actor - L'acteur
- */
-async function removeExistingStatusEffectSafely(actor) {
-  try {
-    // Obtenir une copie des effets à un moment donné pour éviter les modifications concurrentes
-    const allEffects = Array.from(actor.effects.values());
-
-    // Trouver TOUS les effets de posture/statut JaySpik
-    const existingEffects = allEffects.filter((effect) => {
-      try {
-        return (
-          effect.flags?.jaySpik?.isStatusEffect ||
-          (Array.isArray(effect.statuses) &&
-            effect.statuses.some((s) => s.startsWith("jayspik-"))) ||
-          (effect.name &&
-            (effect.name.includes("Défensive") ||
-              effect.name.includes("Offensive") ||
-              effect.name.includes("Concentré") ||
-              effect.name.includes("Furtif") ||
-              effect.name.includes("Berserk")))
-        );
-      } catch (e) {
-        return false;
-      }
-    });
-
-    if (existingEffects.length > 0) {
-      console.log(
-        `JaySpik: Tentative de suppression de ${existingEffects.length} effet(s) de posture`
-      );
-
-      // Supprimer silencieusement chaque effet
-      for (const effect of existingEffects) {
-        await removeEffectSilently(actor, effect.id);
-      }
-    }
-  } catch (error) {
-    // Ignorer toutes les erreurs de cette fonction
-    console.log("JaySpik: Suppression silencieuse des effets terminée");
-  }
-}
-
-/**
- * Supprime un effet de manière silencieuse, en ignorant toutes les erreurs
- * @param {Actor} actor - L'acteur
- * @param {string} effectId - L'ID de l'effet
- */
-async function removeEffectSilently(actor, effectId) {
-  try {
-    // Triple vérification avec différentes méthodes
-    const effect1 = actor.effects.get(effectId);
-    const effect2 = actor.effects.find((e) => e.id === effectId);
-    const effect3 = game.actors.get(actor.id)?.effects?.get(effectId);
-
-    if (effect1 || effect2 || effect3) {
-      await actor.deleteEmbeddedDocuments("ActiveEffect", [effectId]);
-    }
-  } catch (error) {
-    // Ignore toutes les erreurs - nous nous fichons des "does not exist"
-    // L'objectif est juste que l'effet ne soit plus là à la fin
+    await existingEffect.delete();
   }
 }
 
@@ -793,33 +588,6 @@ async function removeEffectSilently(actor, effectId) {
 async function createStatusActiveEffect(actor, statusKey) {
   const statusConfig = CONFIG.JAY_SPIK?.statuses?.[statusKey];
   if (!statusConfig) return;
-
-  // DERNIÈRE VÉRIFICATION : s'assurer qu'aucun effet identique n'existe
-  const finalCheck = actor.effects.find((effect) => {
-    try {
-      return (
-        effect.flags?.jaySpik?.statusKey === statusKey ||
-        (Array.isArray(effect.statuses) &&
-          effect.statuses.includes(`jayspik-${statusKey}`)) ||
-        effect.name === statusConfig.label
-      );
-    } catch (e) {
-      console.warn(
-        "JaySpik: Erreur lors de la vérification finale d'effet:",
-        e
-      );
-      return false;
-    }
-  });
-
-  if (finalCheck) {
-    console.log(
-      `JaySpik: Création annulée - effet '${statusKey}' déjà présent (vérification finale)`
-    );
-    return;
-  }
-
-  console.log(`JaySpik: Création de l'effet '${statusKey}' pour ${actor.name}`);
 
   // Créer un Temporary Effect (pas un Active Effect passif)
   const effectData = {
@@ -849,17 +617,7 @@ async function createStatusActiveEffect(actor, statusKey) {
     statuses: [`jayspik-${statusKey}`], // Status ID pour l'affichage sur token
   };
 
-  try {
-    await actor.createEmbeddedDocuments("ActiveEffect", [effectData]);
-    console.log(
-      `JaySpik: Effet '${statusKey}' créé avec succès pour ${actor.name}`
-    );
-  } catch (error) {
-    console.error(
-      `JaySpik: Erreur lors de la création de l'effet '${statusKey}':`,
-      error
-    );
-  }
+  await actor.createEmbeddedDocuments("ActiveEffect", [effectData]);
 }
 
 /* -------------------------------------------- */
@@ -958,140 +716,3 @@ function getStatusDescription(statusKey) {
   return descriptions[statusKey] || "Statut inconnu";
 }
 */
-
-/**
- * Nettoie les effets de posture en double sur tous les acteurs
- * Utile après un F5 ou au démarrage du monde
- */
-async function cleanupDuplicateStatusEffects() {
-  console.log("JaySpik: Nettoyage des effets de posture en double...");
-
-  for (const actor of game.actors) {
-    try {
-      // Trouver tous les effets de posture JaySpik
-      const statusEffects = actor.effects.filter((effect) => {
-        try {
-          return (
-            effect.flags?.jaySpik?.isStatusEffect ||
-            (Array.isArray(effect.statuses) &&
-              effect.statuses.some((s) => s.startsWith("jayspik-")))
-          );
-        } catch (e) {
-          return false;
-        }
-      });
-
-      // Si il y a plus d'un effet de posture, garder seulement le plus récent
-      if (statusEffects.length > 1) {
-        console.log(
-          `JaySpik: ${actor.name} a ${statusEffects.length} effets de posture, nettoyage...`
-        );
-
-        // Trier par date de création (le plus récent en dernier)
-        statusEffects.sort(
-          (a, b) => (a.createdTime || 0) - (b.createdTime || 0)
-        );
-
-        // Supprimer tous sauf le dernier, un par un
-        const toDelete = statusEffects.slice(0, -1);
-        let deletedCount = 0;
-
-        for (const effect of toDelete) {
-          try {
-            // Vérifier que l'effet existe encore
-            if (actor.effects.get(effect.id)) {
-              await actor.deleteEmbeddedDocuments("ActiveEffect", [effect.id]);
-              deletedCount++;
-            }
-          } catch (deleteError) {
-            if (deleteError.message.includes("does not exist")) {
-              console.log(
-                `JaySpik: Effet ${effect.id} déjà supprimé lors du nettoyage`
-              );
-            } else {
-              console.warn(
-                `JaySpik: Erreur lors du nettoyage de l'effet ${effect.id}:`,
-                deleteError
-              );
-            }
-          }
-        }
-
-        console.log(
-          `JaySpik: Supprimé ${deletedCount} effet(s) en double pour ${actor.name}`
-        );
-      }
-    } catch (actorError) {
-      console.error(
-        `JaySpik: Erreur lors du nettoyage des effets de ${actor.name}:`,
-        actorError
-      );
-    }
-  }
-}
-
-/**
- * Nettoyage périodique silencieux des effets dupliqués
- * S'exécute automatiquement toutes les 30 secondes
- */
-function periodicCleanup() {
-  // Ne faire le nettoyage que si on est le GM ou s'il n'y a pas de GM
-  if (!game.user.isGM && game.users.some((u) => u.isGM && u.active)) {
-    return; // Laisser le GM s'occuper du nettoyage
-  }
-
-  let totalCleaned = 0;
-
-  game.actors.forEach((actor) => {
-    try {
-      const statusEffects = actor.effects.filter((effect) => {
-        try {
-          return (
-            effect.flags?.jaySpik?.isStatusEffect ||
-            (Array.isArray(effect.statuses) &&
-              effect.statuses.some((s) => s.startsWith("jayspik-"))) ||
-            (effect.name &&
-              (effect.name.includes("Défensive") ||
-                effect.name.includes("Offensive") ||
-                effect.name.includes("Concentré") ||
-                effect.name.includes("Furtif") ||
-                effect.name.includes("Berserk")))
-          );
-        } catch (e) {
-          return false;
-        }
-      });
-
-      if (statusEffects.length > 1) {
-        console.log(
-          `JaySpik: Nettoyage périodique - ${actor.name} a ${statusEffects.length} effets`
-        );
-
-        // Garder seulement le plus récent
-        statusEffects.sort(
-          (a, b) => (a.createdTime || 0) - (b.createdTime || 0)
-        );
-        const toDelete = statusEffects.slice(0, -1);
-
-        toDelete.forEach(async (effect) => {
-          try {
-            if (actor.effects.get(effect.id)) {
-              await actor.deleteEmbeddedDocuments("ActiveEffect", [effect.id]);
-              totalCleaned++;
-            }
-          } catch (error) {
-            // Ignorer les erreurs de suppression
-          }
-        });
-      }
-    } catch (error) {
-      // Ignorer les erreurs par acteur
-    }
-  });
-
-  if (totalCleaned > 0) {
-    console.log(
-      `JaySpik: Nettoyage périodique terminé - ${totalCleaned} effet(s) supprimé(s)`
-    );
-  }
-}

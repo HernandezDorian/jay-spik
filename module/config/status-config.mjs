@@ -42,7 +42,7 @@ export const STATUS_CONFIG = {
     label: "Concentré",
     description:
       "La posture de focus réduit le nombre de points de mana nécessaires pour utiliser la magie et octroie un bonus de 5% aux jets de dés. On ne peut cependant pas esquiver.",
-    icon: "perso fa-mon-focus",
+    icon: "fas fa-brain",
     color: "#9c27b0",
   },
 
