@@ -121,3 +121,71 @@ console.log("Statuses après suppression:", token.document.statuses);
 - Désactiver temporairement d'autres modules
 - Vérifier les logs de FoundryVTT
 - Tester avec un personnage/token nouvellement créé
+
+## 🚨 NOUVEAU PROBLÈME IDENTIFIÉ - Joueurs vs GM
+
+### Symptômes observés
+
+- Les doublons apparaissent **plus fréquemment** quand un **joueur** fait des changements rapides
+- Le GM semble moins affecté par ce problème
+- Les logs montrent une différence de timing entre joueurs et GM
+
+### Causes probables
+
+1. **Permissions différentes**
+
+   - Les joueurs n'ont pas toujours les permissions pour modifier les ActiveEffect
+   - FoundryVTT peut créer des conditions de course lors des vérifications
+
+2. **Latence réseau**
+
+   - Les changements des joueurs transitent par le serveur
+   - Délais de synchronisation plus longs entre client/serveur
+
+3. **Hooks multiples**
+   - FoundryVTT peut déclencher des hooks supplémentaires pour les actions de joueurs
+   - Validation/autorisation supplémentaire côté serveur
+
+### Solutions développées
+
+#### 1. Correctif temporaire : `CORRECTIF-JOUEURS-GM.js`
+
+- Détection automatique joueur/GM
+- Délais adaptés selon le type d'utilisateur
+- Système de délégation au GM pour les joueurs sans permissions
+- Monitoring en temps réel des changements
+
+#### 2. Tests spécialisés : `TEST-JOUEURS-GM.js`
+
+- Test des permissions par acteur
+- Mesure du timing des changements
+- Comparaison joueur vs GM
+- Test de changements multiples
+
+#### 3. Guide de résolution : `GUIDE-RESOLUTION-JOUEURS-GM.md`
+
+- Procédures de test détaillées
+- Analyse des causes
+- Solutions étape par étape
+
+### Actions recommandées
+
+1. **Charger le correctif temporaire** dans la console
+2. **Tester avec un compte joueur** vs compte GM
+3. **Observer les logs [MONITOR]** pour identifier les patterns
+4. **Utiliser `window.emergencyCleanup()`** si doublons détectés
+
+### Logs à surveiller
+
+```
+JaySpik: [MONITOR] JOUEUR xyz change ActorName -> defensive
+✅ [MONITOR] OK après changement JOUEUR - 1 effet(s)
+```
+
+Si vous voyez:
+
+```
+🚨 [MONITOR] DOUBLON DÉTECTÉ après changement JOUEUR! 2 effets
+```
+
+C'est confirmation du problème joueur/GM.
