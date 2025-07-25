@@ -41,6 +41,36 @@ export const STATS_CONFIG = {
     icon: "fas fa-users",
   },
 
+  // agilite: {
+  //   label: "Agilité",
+  //   description: "Rapidité, dextérité, réflexes, esquive",
+  //   defaultValue: 50,
+  //   minValue: 0,
+  //   maxValue: 100,
+  //   color: "#4caf50",
+  //   icon: "fas fa-running",
+  // },
+
+  // attack: {
+  //   label: "Attaque",
+  //   description: "Capacité offensive, précision au combat",
+  //   defaultValue: 50,
+  //   minValue: 0,
+  //   maxValue: 100,
+  //   color: "#ff5722",
+  //   icon: "fas fa-sword",
+  // },
+
+  // defense: {
+  //   label: "Défense",
+  //   description: "Capacité défensive, résistance aux dégâts",
+  //   defaultValue: 50,
+  //   minValue: 0,
+  //   maxValue: 100,
+  //   color: "#607d8b",
+  //   icon: "fas fa-shield-alt",
+  // },
+
   //   degats: {
   //     label: "Dégâts",
   //     description: "Puissance d'attaque, force destructrice",

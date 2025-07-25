@@ -1023,3 +1023,127 @@ input[name="system.power.value"] {
   color: #dc3545;
   border: 1px solid #dc3545;
 }
+
+/* ========================================= */
+/* STYLES POUR LA SECTION DE STATUT         */
+/* ========================================= */
+
+.status-section {
+  margin-top: 15px;
+  padding: 10px;
+  background: rgba(156, 39, 176, 0.05);
+  border: 1px solid rgba(156, 39, 176, 0.2);
+  border-radius: 6px;
+}
+
+.status-section h4 {
+  margin: 0 0 10px 0;
+  font-size: 1em;
+  color: #9c27b0;
+  font-weight: bold;
+  text-align: center;
+  border-bottom: 1px solid rgba(156, 39, 176, 0.3);
+  padding-bottom: 5px;
+}
+
+.status-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.status-selector select {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  font-size: 0.9em;
+  color: #333;
+}
+
+.status-selector select:focus {
+  outline: none;
+  border-color: #9c27b0;
+  box-shadow: 0 0 0 2px rgba(156, 39, 176, 0.2);
+}
+
+.status-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  border: 1px solid rgba(156, 39, 176, 0.3);
+}
+
+.status-display i {
+  font-size: 1.2em;
+  width: 20px;
+  text-align: center;
+}
+
+.status-label {
+  font-weight: bold;
+  font-size: 0.9em;
+  color: #333;
+}
+
+/* Styles pour les icônes de statut sur les tokens */
+.token-status-icon {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  z-index: 10;
+}
+
+.token-status-icon.defensive {
+  background: rgba(33, 150, 243, 0.8);
+}
+
+.token-status-icon.aggressive {
+  background: rgba(244, 67, 54, 0.8);
+}
+
+.token-status-icon.focused {
+  background: rgba(156, 39, 176, 0.8);
+}
+
+.token-status-icon.stealthy {
+  background: rgba(96, 125, 139, 0.8);
+}
+
+.token-status-icon.berserker {
+  background: rgba(255, 87, 34, 0.8);
+}
+
+/* Animation pour les changements de statut */
+.status-display {
+  transition: all 0.3s ease;
+}
+
+.status-selector select {
+  transition: border-color 0.2s ease;
+}
+
+/* Responsive pour la section statut */
+@media (max-width: 600px) {
+  .status-section {
+    margin-top: 10px;
+    padding: 8px;
+  }
+
+  .status-display {
+    padding: 6px;
+  }
+}

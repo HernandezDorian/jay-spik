@@ -81,6 +81,30 @@
             </div>
             {{/each}}
           </div>
+
+          {{!-- Section de statut --}}
+          <div class="status-section flexcol">
+            <h4>Statut</h4>
+            <div class="status-selector">
+              <select name="system.status" data-dtype="String" title="Sélectionner un statut pour le personnage">
+                {{#each config.statuses as |status key|}}
+                  <option value="{{key}}" {{#if (eq key @root.system.status)}}selected{{/if}} title="{{lookup @root.statusDescriptions key}}">
+                    {{status.label}}
+                  </option>
+                {{/each}}
+              </select>
+              {{#if system.status}}
+                {{#unless (eq system.status "none")}}
+                  {{#with (lookup config.statuses system.status) as |currentStatus|}}
+                    <div class="status-display">
+                      <i class="{{currentStatus.icon}}" style="color: {{currentStatus.color}}"></i>
+                      <span class="status-label">{{currentStatus.label}}</span>
+                    </div>
+                  {{/with}}
+                {{/unless}}
+              {{/if}}
+            </div>
+          </div>
         </aside>
 
         {{!-- For the main features list, span the right two columns --}}

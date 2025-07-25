@@ -41,6 +41,31 @@
         </div>
 
       </div>
+
+      {{!-- Section de statuts --}}
+      <div class="status-section">
+        <h4>Statut du PNJ</h4>
+        <div class="status-selector">
+          <select name="system.status" data-dtype="String">
+            {{#each config.statuses as |status key|}}
+              <option value="{{key}}" {{#if (eq ../system.status key)}}selected{{/if}}>
+                {{status.label}}
+              </option>
+            {{/each}}
+          </select>
+          
+          {{#if system.status}}
+            {{#unless (eq system.status "none")}}
+              {{#with (lookup config.statuses system.status) as |currentStatus|}}
+                <div class="status-display" title="{{lookup statusDescriptions system.status}}">
+                  <i class="{{currentStatus.icon}}" style="color: {{currentStatus.color}};"></i>
+                  <span class="status-label">{{currentStatus.label}}</span>
+                </div>
+              {{/with}}
+            {{/unless}}
+          {{/if}}
+        </div>
+      </div>
     </div>
   </header>
 

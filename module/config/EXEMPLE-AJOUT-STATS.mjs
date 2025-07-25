@@ -73,35 +73,35 @@ export const EXEMPLE_SYSTEME_ETENDU = {
   },
 
   // Nouvelles stats ajoutées
-  magie: {
-    label: "Magie",
-    description: "Pouvoir magique, sorts, mana",
-    defaultValue: 25,
-    minValue: 0,
-    maxValue: 100,
-    color: "#9c27b0",
-    icon: "fas fa-magic",
-  },
+  // magie: {
+  //   label: "Magie",
+  //   description: "Pouvoir magique, sorts, mana",
+  //   defaultValue: 25,
+  //   minValue: 0,
+  //   maxValue: 100,
+  //   color: "#9c27b0",
+  //   icon: "fas fa-magic",
+  // },
 
-  chance: {
-    label: "Chance",
-    description: "Fortune, destin, coups de chance",
-    defaultValue: 50,
-    minValue: 0,
-    maxValue: 100,
-    color: "#4caf50",
-    icon: "fas fa-dice",
-  },
+  // chance: {
+  //   label: "Chance",
+  //   description: "Fortune, destin, coups de chance",
+  //   defaultValue: 50,
+  //   minValue: 0,
+  //   maxValue: 100,
+  //   color: "#4caf50",
+  //   icon: "fas fa-dice",
+  // },
 
-  technique: {
-    label: "Technique",
-    description: "Compétences techniques, artisanat",
-    defaultValue: 40,
-    minValue: 0,
-    maxValue: 100,
-    color: "#ff9800",
-    icon: "fas fa-cogs",
-  },
+  // technique: {
+  //   label: "Technique",
+  //   description: "Compétences techniques, artisanat",
+  //   defaultValue: 40,
+  //   minValue: 0,
+  //   maxValue: 100,
+  //   color: "#ff9800",
+  //   icon: "fas fa-cogs",
+  // },
 };
 
 // ========================================
